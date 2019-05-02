@@ -6,8 +6,8 @@ Trabalho final da matéria de Sistemas operacionais da UnB.
 
 Alunos:
 
-* Alex Nascimento
-* Andre Garrido Damaceno.- mat. 15/0117531
+* Alex Nascimento - Matrícula 15/0115474
+* Andre Garrido Damaceno - Matrícula 15/0117531
 * Danillo Neves
 * Guilherme Lopes
 
