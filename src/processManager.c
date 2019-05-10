@@ -53,6 +53,11 @@ int main(int argc, char *argv[])
 
     free(topology);
   }
+  else
+  {
+    printf("Quantidade de argumentos inválida\n");
+    exit(1);
+  }
 
   return 0;
 }
