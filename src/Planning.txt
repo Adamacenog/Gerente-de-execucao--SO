@@ -1,6 +1,10 @@
 # Planejamento
 
 1. Escalanador
+  - Inicializar fila de mensagens
+  - Criar os X processos
+        Utiliza execl e passa o programa do gerente de execução
+  - Criar fila de mensagens
 1.1 enviar mensagem para os gerentes de execução
   - "Quero que todos executem o programa"
 1.2 manter tabela de gerentes livres/ocupados
