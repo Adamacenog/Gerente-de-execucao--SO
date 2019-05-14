@@ -12,6 +12,7 @@ Guilherme Lopes
     #include <ctype.h>
     #include <string.h>
     #include <stdlib.h>
+    #include <errno.h>
 #endif
 
 #ifndef _ProcessManager_library

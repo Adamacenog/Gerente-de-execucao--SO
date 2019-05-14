@@ -1,3 +1,7 @@
 /.vscode
 /src/obj
 /src/processManager
+/src/test1
+/src/test1.c
+/src/test2
+/src/test2.c
