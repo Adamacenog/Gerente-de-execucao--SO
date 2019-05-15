@@ -16,6 +16,6 @@ typedef struct msgbuf
 } msgbuf;
 
 int QueueCreator(void);
-char *MessageReceive(int, msgbuf, long);
-void MessageSend(int, msgbuf, size_t);
-void QueueDestroy(int, struct msqid_ds);
+void MessageReceive(int, struct msgbuf, long);
+void MessageSend(int, struct msgbuf, size_t);
+void QueueDestroy(int msqid);
