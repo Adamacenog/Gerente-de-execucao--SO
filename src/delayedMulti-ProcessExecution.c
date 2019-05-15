@@ -7,22 +7,22 @@ Guilherme Lopes
 */
 
 #ifndef _Primary_libraries
-  #define _Primary_libraries
-    #include <stdio.h>
-    #include <ctype.h>
-    #include <string.h>
-    #include <stdlib.h>
-    #include <errno.h>
+#define _Primary_libraries
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
 #endif
 
 #ifndef _ProcessManager_library
-  #define _ProcessManager_library
-    #include "processManager.h"
+#define _ProcessManager_library
+#include "processManager.h"
 #endif
 
 #ifndef _Scheduler_library
-  #define _Scheduler_library
-    #include "scheduler.h"
+#define _Scheduler_library
+#include "scheduler.h"
 #endif
 
 int main(int argc, char *argv[])
@@ -35,16 +35,20 @@ int main(int argc, char *argv[])
     topology = (char *)malloc(sizeof(argv[1]));
     strcpy(topology, argv[1]);
 
-    for(i = 0; i < sizeof(argv[1]) + 1; i++)
+    for (i = 0; i < sizeof(argv[1]) + 1; i++)
       *(topology + i) = tolower(*(topology + i));
 
     printf("%s\n", topology);
 
     /* general process scheduler */
-    // falha com a quantidade de argumentos errada
 
     if (strcmp(topology, "hypercube") == 0)
     {
+      /* Initializes message queue */
+
+      /* Creates N process that will execute the process manager logic */
+
+      /* Creates message queue  */
     }
 
     if (strcmp(topology, "torus") == 0)
