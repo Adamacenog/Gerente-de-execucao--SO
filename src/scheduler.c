@@ -79,7 +79,7 @@ void QueueDestroy(int msqid, struct msqid_ds msqid_ds)
   if ((msgctl(msqid, IPC_RMID, &msqid_ds)) < 0)
   {
     printf("Error while destroying the message queue.\n");
-    perror("msgsnd");
+    perror("msgctl");
     exit(1);
   }
 }
