@@ -2,7 +2,7 @@
 Propriedade de:
 Alex Nascimento
 Andre Garrido Damaceno.- mat. 15/0117531
-Danillo Neves
+Danillo Neves. - mat. 14/0135839
 Guilherme Lopes
 */
 
@@ -27,59 +27,79 @@ Guilherme Lopes
 
 #ifndef _Queue_library
 #define _Queue_library
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
+#include "messageQueue.h"
 #endif
 
-#define MSGSZ 128
-
-int QueueCreator()
+int main(int argc, char *argv[])
 {
-  int msqid;
-  key_t key = 3139;
+  int i, msqid, pid[16], busyTable[16];
+  char *topology;
+  key_t key;
 
-  if ((msqid = msgget(key, IPC_CREAT | 0666)) < 0)
+  if (argc == 2)
   {
-    printf("Error while creating the message queue.\n");
-    perror("msgget");
+    topology = (char *)malloc(sizeof(argv[1]));
+
+    if (topology == NULL)
+    {
+      printf("Error on malloc.");
+      exit(1);
+    }
+
+    strcpy(topology, argv[1]);
+
+    for (i = 0; i < sizeof(argv[1]) + 1; i++)
+      *(topology + i) = tolower(*(topology + i));
+
+    printf("%s\n", topology);
+
+    /* general process scheduler */
+
+    if (strcmp(topology, "hypercube") == 0)
+    {
+      key = 4915;
+
+      /* Initializes message queue */
+      msqid = QueueCreator(key);
+
+      /* Creates N process that will execute the process manager logic */
+      for (i = 0; i < 2; i++)
+      {
+        busyTable[i] = 0;
+
+        // Checks if fork is created sucessfully
+        if ((pid[i] = fork()) < 0)
+        {
+          printf("Error while creating a node.\n");
+          perror("fork");
+          exit(1);
+        }
+        else
+        {
+          // Checks whether it is processes father (pid != 0) or child (pid == 0)
+          if (pid[i] == 0)
+            execl("./gerente_execucao", "gerente_execucao", itoa(i), NULL);
+        }
+      }
+    }
+
+    if (strcmp(topology, "torus") == 0)
+    {
+      key = 4916;
+    }
+
+    if (strcmp(topology, "fat_tree") == 0)
+    {
+      key = 4917;
+    }
+
+    free(topology);
+  }
+  else
+  {
+    printf("Invalid number of arguments.\n");
     exit(1);
   }
-}
 
-char *MessageReceive(int msqid, msgbuf rbuf, long msgtype)
-{
-  // Receives the message with type msgtype
-  // msgrcv's flag is 0, so that it is blocked ultil a msg with type msgtype is in the queue
-  if (msgrcv(msqid, &rbuf, MSGSZ, msgtype, 0) < 0)
-  {
-    printf("Error receiving the message from queue.\n");
-    perror("msgrcv");
-    exit(1);
-  }
-
-  return rbuf.mtext;
-}
-
-void MessageSend(int msqid, msgbuf sbuf, size_t buf_length)
-{
-  // Sends the message in sbuf (with it's type and content)
-  // msgsnd's flag is IPC_NOWAIT, so it is not a blocking call
-  if ((msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT)) < 0)
-  {
-    // printf("%d, %ld, %s, %ld\n", msqid, sbuf.mtype, sbuf.mtext, buf_length); // Debbuging
-    printf("Error while sending the message to the queue.\n");
-    perror("msgsnd");
-    exit(1);
-  }
-}
-
-void QueueDestroy(int msqid, struct msqid_ds msqid_ds)
-{
-  if ((msgctl(msqid, IPC_RMID, &msqid_ds)) < 0)
-  {
-    printf("Error while destroying the message queue.\n");
-    perror("msgctl");
-    exit(1);
-  }
+  return 0;
 }
