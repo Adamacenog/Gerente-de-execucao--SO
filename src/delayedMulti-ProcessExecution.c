@@ -7,24 +7,29 @@ Guilherme Lopes
 */
 
 #ifndef _Primary_libraries
-  #define _Primary_libraries
-    #include <stdio.h>
-    #include <ctype.h>
-    #include <string.h>
-    #include <stdlib.h>
-    #include <errno.h>
+#define _Primary_libraries
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
 #endif
 
 #ifndef _SHM_library
-  #define _SHM_library
-    #include "shm.h"
+#define _SHM_library
+#include "shm.h"
+#endif
+
+#ifndef _Queue_library
+#define _Queue_library
+#include "messageQueue.h"
 #endif
 
 int main(int argc, char *argv[])
 {
-  int i;
+  int i, key, msqid;
   char *exeFile;
-  struct job *jobHead = NULL;
+  struct Job *jobHead = NULL;
 
   if (argc == 3)
   {
@@ -36,6 +41,8 @@ int main(int argc, char *argv[])
       exit(1);
     }
 
+    msqid = QueueCreator(key);
+
     strcpy(exeFile, argv[2]);
 
     for (i = 0; i < sizeof(argv[2]) + 1; i++)
@@ -43,9 +50,15 @@ int main(int argc, char *argv[])
 
     printf("%s\n", exeFile);
 
+    jobHead->jobId = getpid();
+    jobHead->exeFile = exeFile;
+    jobHead->seconds = atoi(argv[3]);
+
+    MessageReceive(msqid, jobHead, 0666);
 
     free(exeFile);
   }
+
   else
   {
     printf("Invalid number of arguments.\n");
