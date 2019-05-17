@@ -32,8 +32,9 @@ Guilherme Lopes
 
 int main(int argc, char *argv[])
 {
-  int i;
+  int i, msqid, pid[16], busyTable[16];
   char *topology;
+  key_t key;
 
   if (argc == 2)
   {
@@ -56,19 +57,42 @@ int main(int argc, char *argv[])
 
     if (strcmp(topology, "hypercube") == 0)
     {
+      key = 4915;
+
       /* Initializes message queue */
+      msqid = QueueCreator(key);
 
       /* Creates N process that will execute the process manager logic */
+      for (i = 0; i < 2; i++)
+      {
+        busyTable[i] = 0;
 
-      /* Creates message queue  */
+        // Checks if fork is created sucessfully
+        if ((pid[i] = fork()) < 0)
+        {
+          printf("Error while creating a node.\n");
+          perror("fork");
+          exit(1);
+        }
+        else
+        {
+          // Checks whether it is processes father (pid != 0) or child (pid == 0)
+          if (pid[i] == 0)
+           execl("./gerente_execucao", "gerente_execucao", itoa(i), NULL);
+        }
+      }
+
+      
     }
 
     if (strcmp(topology, "torus") == 0)
     {
+      key = 4916;
     }
 
     if (strcmp(topology, "fat_tree") == 0)
     {
+      key = 4917;
     }
 
     free(topology);

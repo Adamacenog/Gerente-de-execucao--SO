@@ -27,10 +27,9 @@ Guilherme Lopes
     #include "messageQueue.h"
 #endif
 
-int QueueCreator()
+int QueueCreator(key_t key)
 {
   int msqid;
-  key_t key = 3139;
 
   if ((msqid = msgget(key, IPC_CREAT | 0666)) < 0)
   {

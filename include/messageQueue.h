@@ -15,7 +15,7 @@ typedef struct msgbuf
 	char mtext[MSGSZ];
 } msgbuf;
 
-int QueueCreator(void);
+int QueueCreator(key_t);
 void MessageReceive(int, struct msgbuf *, long);
 void MessageSend(int, struct msgbuf, size_t);
 void QueueDestroy(int msqid);

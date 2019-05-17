@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 
   if (argc == 3)
   {
-    exeFile = (char *)malloc(sizeof(argv[1]));
+    exeFile = (char *)malloc(sizeof(argv[2]));
 
     if (exeFile == NULL)
     {
