@@ -7,16 +7,16 @@ LDIR =../lib
 
 LIBS=-lm
 
-_DEPS = processManager.h
+_DEPS = delayedMulti-ProcessExecution.h processManager.h shm.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_DEPS2 = scheduler.h
+_DEPS2 = scheduler.h messageQueue.h
 DEPS2 = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = delayedMulti-ProcessExecution.o processManager.o
+_OBJ = delayedMulti-ProcessExecution.o processManager.o shm.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-_OBJ2 = scheduler.o
+_OBJ2 = scheduler.o messageQueue.o
 OBJ2 = $(patsubst %,$(ODIR)/%,$(_OBJ2))
 
 $(ODIR)/%.o: %.c $(DEPS)
