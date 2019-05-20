@@ -16,13 +16,6 @@ Guilherme Lopes
     #include <unistd.h>
 #endif
 
-#ifndef _Queue_Definition
-  #define _Queue_Definition
-    #include <sys/types.h>
-    #include <sys/ipc.h>
-    #include <sys/msg.h>
-#endif
-
 #ifndef _Queue_library
   #define _Queue_library
     #include "messageQueue.h"
@@ -42,15 +35,25 @@ int QueueCreator(key_t key)
   return msqid;
 }
 
-void MessageReceive(int msqid, struct msgbuf *rbuf, long msgtype)
+void MessageReceive(int msqid, struct msgbuf *rbuf, long msgtype, int block)
 {
   // Receives the message with type msgtype
   // msgrcv's flag is 0, so that it is blocked ultil a msg with type msgtype is in the queue
-  if (msgrcv(msqid, rbuf, MSGSZ, msgtype, 0) < 0)
-  {
-    printf("Error receiving the message from queue.\n");
-    perror("msgrcv");
-    exit(1);
+  if(block == 1) {
+    if (msgrcv(msqid, rbuf, MSGSZ, msgtype, 0) < 0)
+    {
+      printf("Error receiving the message from queue.\n");
+      perror("msgrcv");
+      exit(1);
+    }
+  }
+  else {
+    if (msgrcv(msqid, rbuf, MSGSZ, msgtype, IPC_NOWAIT) < 0)
+    {
+      printf("Error receiving the message from queue.\n");
+      perror("msgrcv");
+      exit(1);
+    }
   }
 }
 
