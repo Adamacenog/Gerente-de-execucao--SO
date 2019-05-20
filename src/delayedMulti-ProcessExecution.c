@@ -7,29 +7,27 @@ Guilherme Lopes
 */
 
 #ifndef _Primary_libraries
-#define _Primary_libraries
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#endif
-
-#ifndef _SHM_library
-#define _SHM_library
-#include "shm.h"
+  #define _Primary_libraries
+    #include <stdio.h>
+    #include <ctype.h>
+    #include <string.h>
+    #include <stdlib.h>
+    #include <errno.h>
+    #include <unistd.h>
 #endif
 
 #ifndef _Queue_library
-#define _Queue_library
-#include "messageQueue.h"
+  #define _Queue_library
+    #include "messageQueue.h"
 #endif
 
 int main(int argc, char *argv[])
 {
-  int i, key, msqid;
-  char *exeFile;
-  struct Job *jobHead = NULL;
+  key_t key = 7869;
+  int i, msqid;
+  char *exeFile, secondsString[10];
+  // TYPE 666 IS USED TO COMUNICATE WITH SCHEDULER.
+  long mtype = 666;
 
   if (argc == 3)
   {
@@ -45,16 +43,12 @@ int main(int argc, char *argv[])
 
     strcpy(exeFile, argv[2]);
 
-    for (i = 0; i < sizeof(argv[2]) + 1; i++)
+    for (i = 0; i < strlen(argv[2]) + 1; i++)
       *(exeFile + i) = tolower(*(exeFile + i));
 
     printf("%s\n", exeFile);
 
-    jobHead->jobId = getpid();
-    jobHead->exeFile = exeFile;
-    jobHead->seconds = atoi(argv[3]);
-
-    MessageReceive(msqid, jobHead, 0666);
+    CreateMessage(msqid, getpid(), argv[1], exeFile, mtype);
 
     free(exeFile);
   }

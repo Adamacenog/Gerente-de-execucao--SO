@@ -13,6 +13,7 @@ Guilherme Lopes
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
 #endif
 
 #ifndef _ProcessManager_library
@@ -33,8 +34,9 @@ Guilherme Lopes
 int main(int argc, char *argv[])
 {
   int i, msqid, pid[16], busyTable[16];
-  char *topology;
-  key_t key;
+  char *topology, jobIdString[10];
+  key_t key, processExecutionKey = 7869;
+  struct msgbuf bufReceive;
 
   if (argc == 2)
   {
@@ -78,7 +80,10 @@ int main(int argc, char *argv[])
         {
           // Checks whether it is processes father (pid != 0) or child (pid == 0)
           if (pid[i] == 0)
-            execl("./gerente_execucao", "gerente_execucao", itoa(i), NULL);
+          {
+            sprintf(jobIdString, "%d", i);
+            execl("./gerente_execucao", "gerente_execucao", jobIdString, NULL);
+          }
         }
       }
     }
@@ -92,6 +97,13 @@ int main(int argc, char *argv[])
     {
       key = 4917;
     }
+
+    msqid = QueueCreator(processExecutionKey);
+    MessageReceive(msqid, &bufReceive, 666);
+
+    printf("MESSAGE RECEIVED: %s\n", bufReceive.mtext);
+
+    QueueDestroy(msqid);
 
     free(topology);
   }

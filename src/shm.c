@@ -13,6 +13,7 @@ Guilherme Lopes
     #include <string.h>
     #include <stdlib.h>
     #include <errno.h>
+    #include <unistd.h>
 #endif
 
 #ifndef _SHM_Includes

@@ -6,7 +6,7 @@ Danillo Neves. - mat. 14/0135839
 Guilherme Lopes
 */
 
-#define MSGSZ 128
+#define MSGSZ 500
 
 // Declare the message structure.
 typedef struct msgbuf
@@ -19,3 +19,4 @@ int QueueCreator(key_t);
 void MessageReceive(int, struct msgbuf *, long);
 void MessageSend(int, struct msgbuf, size_t);
 void QueueDestroy(int msqid);
+void CreateMessage(int, int, char *, char *, long);

@@ -13,6 +13,7 @@ Guilherme Lopes
     #include <string.h>
     #include <stdlib.h>
     #include <errno.h>
+    #include <unistd.h>
 #endif
 
 #ifndef _Queue_Definition
@@ -76,4 +77,26 @@ void QueueDestroy(int msqid)
     perror("msgctl");
     exit(1);
   }
+}
+
+void CreateMessage(int msqid, int jobId, char *seconds, char *execFile, long mtype)
+{
+  char jobIdString[10];
+  struct msgbuf buf;
+  int i;
+
+  for (i = 0; i < MSGSZ; i++)
+    buf.mtext[i] = 0;
+
+  sprintf(jobIdString, "%d", jobId);
+
+  strcpy(buf.mtext, jobIdString);
+  strcat(buf.mtext, "|");
+  strcat(buf.mtext, seconds);
+  strcat(buf.mtext, "|");
+  strcat(buf.mtext, execFile);
+
+  buf.mtype = mtype;
+
+  MessageSend(msqid, buf, (strlen(buf.mtext) + 1));
 }
