@@ -1,6 +1,6 @@
 /*
 Propriedade de:
-Alex Nascimento
+Alex Nascimento. - mat. 15/0115474
 Andre Garrido Damaceno.- mat. 15/0117531
 Danillo Neves. - mat. 14/0135839
 Guilherme Lopes
@@ -33,10 +33,12 @@ Guilherme Lopes
 
 int main(int argc, char *argv[])
 {
-  int i, msqid, pid[16], busyTable[16];
-  char *topology, jobIdString[10];
+  int i, msqid, pid[16], busyTable[16], job_counter;
+  char *topology, jobIdString[10], pattern[2] = "|";
+  char *seconds, execFile[10];
   key_t key, processExecutionKey = 7869;
   struct msgbuf bufReceive;
+  struct Job* job_entry;
 
   if (argc == 2)
   {
@@ -83,6 +85,26 @@ int main(int argc, char *argv[])
           {
             sprintf(jobIdString, "%d", i);
             execl("./gerente_execucao", "gerente_execucao", jobIdString, NULL);
+          } 
+          else {
+            /* Receives a msg from queue created by delayedMulti */
+            msqid = QueueCreator(processExecutionKey);
+            MessageReceive(msqid, &bufReceive, 666, 0);
+
+            /* Cuts the string with the pattern to be parsed */
+            strcpy(jobIdString,strtok(&bufReceive,pattern));
+            strcpy(seconds,strtok(&bufReceive,pattern));
+            strcpy(execFile,strtok(&bufReceive,pattern));
+
+            /* Initializes job values */
+            job_entry->jobId = job_counter;
+            job_entry->seconds = seconds;
+            strcpy(job_entry->exeFile, execFile);
+
+            /* TO DO: Send job_entry inside a message queue with another msqid */
+            CreateMessage(msqid, job_entry->jobId, job_entry->seconds, job_entry->exeFile, 666);
+
+            QueueDestroy(msqid);
           }
         }
       }
@@ -97,13 +119,6 @@ int main(int argc, char *argv[])
     {
       key = 4917;
     }
-
-    msqid = QueueCreator(processExecutionKey);
-    MessageReceive(msqid, &bufReceive, 666);
-
-    printf("MESSAGE RECEIVED: %s\n", bufReceive.mtext);
-
-    QueueDestroy(msqid);
 
     free(topology);
   }
