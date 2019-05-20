@@ -92,9 +92,9 @@ int main(int argc, char *argv[])
             MessageReceive(msqid, &bufReceive, 666, 0);
 
             /* Cuts the string with the pattern to be parsed */
-            strcpy(jobIdString,strtok(&bufReceive,pattern));
-            strcpy(seconds,strtok(&bufReceive,pattern));
-            strcpy(execFile,strtok(&bufReceive,pattern));
+            strcpy(jobIdString,strtok(bufReceive.mtext,pattern));
+            strcpy(seconds,strtok(bufReceive.mtext,pattern));
+            strcpy(execFile,strtok(bufReceive.mtext,pattern));
 
             /* Initializes job values */
             job_entry->jobId = job_counter;
