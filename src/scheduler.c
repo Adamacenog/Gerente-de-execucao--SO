@@ -41,21 +41,18 @@ int main(int argc, char *argv[])
 
     if (strcmp(topology, "hypercube") == 0)
     {
-      key = 4915;
       topologyType = 1;
       nodesSize = 16;
     }
 
     if (strcmp(topology, "torus") == 0)
     {
-      key = 4916;
       topologyType = 2;
       nodesSize = 16;
     }
 
     if (strcmp(topology, "fat_tree") == 0)
     {
-      key = 4917;
       topologyType = 3;
       nodesSize = 15;
     }
@@ -87,34 +84,17 @@ int main(int argc, char *argv[])
             sprintf(jobIdString, "%d", i);
             execl("./gerente_execucao", "gerente_execucao", jobIdString, NULL);
           }
-          else
-          {
-            /* Receives a msg from queue created by delayedMulti */
-            MessageReceive(msqid, &bufReceive, 666, 0);
-
-            /* Cuts the string with the pattern to be parsed */
-            strcpy(jobIdString,strtok(bufReceive.mtext,pattern));
-            strcpy(seconds,strtok(bufReceive.mtext,pattern));
-            strcpy(execFile,strtok(bufReceive.mtext,pattern));
-
-            /* Initializes job values */
-            job_entry->jobId = job_counter;
-            job_entry->seconds = seconds;
-            strcpy(job_entry->exeFile, execFile);
-
-            /* TO DO: Send job_entry inside a message queue with another msqid */
-            CreateMessage(msqid, job_entry->jobId, job_entry->seconds, job_entry->exeFile, 666);
-
-            QueueDestroy(msqid);
-          }
         }
       }
     }
 
-    /*while (1)
+    signal(SIGALRM, delayed_message_send);
+    job_counter = 1;
+
+    while (1)
     {
-      runScheduler();
-    }*/
+      runScheduler(msqid, job_entry, bufReceive, job_counter, seconds, execFile, jobIdString, pattern);
+    }
   }
   else
   {
@@ -125,7 +105,26 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-/*void runScheduler()
+void runScheduler(int msqid, struct Job*  job_entry, struct msgbuf bufReceive, int job_counter, char * seconds, char * execFile, char * jobIdString, char pattern)
 {
+  /* Receives a msg from queue created by delayedMulti */
+  MessageReceive(msqid, &bufReceive, 666, 0);
 
-}*/
+  /* Cuts the string with the pattern to be parsed */
+  strcpy(jobIdString,strtok(bufReceive.mtext,pattern));
+  strcpy(seconds,strtok(bufReceive.mtext,pattern));
+  strcpy(execFile,strtok(bufReceive.mtext,pattern));
+
+  /* Initializes job values */
+  job_entry->jobId = job_counter;
+  job_entry->seconds = seconds;
+  strcpy(job_entry->exeFile, execFile);
+  job_entry->start_time = time(NULL);
+  
+  alarm(job_entry->seconds);
+}
+
+void delayed_message_send(int msqid, struct Job* job_entry) {
+  /* TO DO: Send job_entry inside a message queue with another msqid */
+  CreateMessage(msqid, job_entry->jobId, job_entry->seconds, job_entry->exeFile, 666);
+}

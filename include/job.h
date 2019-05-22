@@ -18,17 +18,23 @@ Guilherme Lopes. - mat. 15/0128215
     #include <signal.h>
 #endif
 
-#ifndef _ProcessManager_library
-  #define _ProcessManager_library
-    #include "processManager.h"
-#endif
+typedef struct Job
+{
+  int jobId;
+  /* TO DO: change back to integer */
+  char* seconds;
+  time_t start_time;
+  time_t end_time;
+  char *exeFile;
+} job;
 
-#ifndef _Queue_library
-  #define _Queue_library
-    #include "messageQueue.h"
-#endif
+typedef struct JobQueue
+{
+  int remainingSeconds;
+  struct Job job;
+  struct JobQueue *next;
+} jobQueue;
 
-#ifndef _Job_Queue
-  #define _Job_Queue
-    #include "job.h"
-#endif
+void addToQueue(jobQueue **, job);
+void removeHead(jobQueue **);
+void deleteQueue(jobQueue **);
