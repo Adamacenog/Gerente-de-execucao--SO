@@ -23,36 +23,19 @@ Guilherme Lopes
 
 int main(int argc, char *argv[])
 {
-  key_t key = 7869;
   int i, msqid;
-  char *exeFile, secondsString[10];
   // TYPE 666 IS USED TO COMUNICATE WITH SCHEDULER.
   long mtype = 666;
+  key_t key = 7869;
 
   if (argc == 3)
   {
-    exeFile = (char *)malloc(sizeof(argv[2]));
-
-    if (exeFile == NULL)
-    {
-      printf("Error on malloc.");
-      exit(1);
-    }
-
+    // Creates the queue that is used to communicate with scheduler
     msqid = QueueCreator(key);
 
-    strcpy(exeFile, argv[2]);
-
-    for (i = 0; i < strlen(argv[2]) + 1; i++)
-      *(exeFile + i) = tolower(*(exeFile + i));
-
-    printf("%s\n", exeFile);
-
-    CreateMessage(msqid, getpid(), argv[1], exeFile, mtype);
-
-    free(exeFile);
+    // Sends the program exec file and delayed execution time to the scheduler (using the queue)
+    CreateMessage(msqid, getpid(), argv[1], argv[2], mtype);
   }
-
   else
   {
     printf("Invalid number of arguments.\n");

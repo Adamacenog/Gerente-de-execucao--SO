@@ -6,37 +6,17 @@ Danillo Neves. - mat. 14/0135839
 Guilherme Lopes
 */
 
-#ifndef _Primary_libraries
-#define _Primary_libraries
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <unistd.h>
-#endif
-
-#ifndef _ProcessManager_library
-#define _ProcessManager_library
-#include "processManager.h"
-#endif
-
 #ifndef _Scheduler_library
-#define _Scheduler_library
-#include "scheduler.h"
-#endif
-
-#ifndef _Queue_library
-#define _Queue_library
-#include "messageQueue.h"
+  #define _Scheduler_library
+    #include "scheduler.h"
 #endif
 
 int main(int argc, char *argv[])
 {
-  int i, msqid, pid[16], busyTable[16], job_counter;
+  int i, msqid, pid[16], busyTable[16], job_counter, topologyType = -1, nodesSize;
   char *topology, jobIdString[10], pattern[2] = "|";
   char *seconds, execFile[10];
-  key_t key, processExecutionKey = 7869;
+  key_t key = 7869;
   struct msgbuf bufReceive;
   struct Job* job_entry;
 
@@ -62,12 +42,33 @@ int main(int argc, char *argv[])
     if (strcmp(topology, "hypercube") == 0)
     {
       key = 4915;
+      topologyType = 1;
+      nodesSize = 16;
+    }
 
+    if (strcmp(topology, "torus") == 0)
+    {
+      key = 4916;
+      topologyType = 2;
+      nodesSize = 16;
+    }
+
+    if (strcmp(topology, "fat_tree") == 0)
+    {
+      key = 4917;
+      topologyType = 3;
+      nodesSize = 15;
+    }
+
+    free(topology);
+
+    if (topologyType != -1)
+    {
       /* Initializes message queue */
       msqid = QueueCreator(key);
 
       /* Creates N process that will execute the process manager logic */
-      for (i = 0; i < 2; i++)
+      for (i = 0; i < nodesSize; i++)
       {
         busyTable[i] = 0;
 
@@ -85,10 +86,10 @@ int main(int argc, char *argv[])
           {
             sprintf(jobIdString, "%d", i);
             execl("./gerente_execucao", "gerente_execucao", jobIdString, NULL);
-          } 
-          else {
+          }
+          else
+          {
             /* Receives a msg from queue created by delayedMulti */
-            msqid = QueueCreator(processExecutionKey);
             MessageReceive(msqid, &bufReceive, 666, 0);
 
             /* Cuts the string with the pattern to be parsed */
@@ -110,17 +111,10 @@ int main(int argc, char *argv[])
       }
     }
 
-    if (strcmp(topology, "torus") == 0)
+    /*while (1)
     {
-      key = 4916;
-    }
-
-    if (strcmp(topology, "fat_tree") == 0)
-    {
-      key = 4917;
-    }
-
-    free(topology);
+      runScheduler();
+    }*/
   }
   else
   {
@@ -130,3 +124,8 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
+/*void runScheduler()
+{
+
+}*/
