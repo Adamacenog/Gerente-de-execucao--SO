@@ -18,11 +18,12 @@ Guilherme Lopes. - mat. 15/0128215
     #include <signal.h>
 #endif
 
+
 typedef struct Job
 {
   int jobId;
   /* TO DO: change back to integer */
-  char* seconds;
+  int seconds;
   time_t start_time;
   time_t end_time;
   char *exeFile;
@@ -38,3 +39,4 @@ typedef struct JobQueue
 void addToQueue(jobQueue **, job);
 void removeHead(jobQueue **);
 void deleteQueue(jobQueue **);
+void decreaseAllRemainingTimes(jobQueue *, int);

@@ -14,11 +14,11 @@ Guilherme Lopes. - mat. 15/0128215
 int main(int argc, char const *argv[]) {
 
     int process_manager_id, msqid;
-    int neighboords = [4];
+    int neighboords[4];
     key_t key = 7869;
     
     if(argc == 2) {
-        signal(SIGTERM, exit(1));
+        signal(SIGTERM, endExecution);
         process_manager_id = atoi(argv[1]);
 
         /* If process_manager_id == 0, it accesses scheduler queue */
@@ -42,4 +42,10 @@ int main(int argc, char const *argv[]) {
     
     
     return 0;
+}
+
+// The function needs to receive an 'int', to describe what type of signal it is redefining
+void endExecution(int sig)
+{
+
 }

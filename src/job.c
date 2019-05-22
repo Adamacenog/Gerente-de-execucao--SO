@@ -76,3 +76,12 @@ void deleteQueue(jobQueue **jobHead)
         removeHead(jobHead);
     }
 }
+
+void decreaseAllRemainingTimes(jobQueue *jobHead, int amount2Decrease)
+{
+    while(jobHead != NULL)
+    {
+        (*jobHead).remainingSeconds -= amount2Decrease;
+        jobHead = jobHead->next;
+    }
+}

@@ -11,14 +11,15 @@ Guilherme Lopes
     #include "scheduler.h"
 #endif
 
+// Those variables need to be global, so that the signal redefinition can use them.
+int msqid;
+struct Job *job_entry;
+
 int main(int argc, char *argv[])
 {
-  int i, msqid, pid[16], busyTable[16], job_counter, topologyType = -1, nodesSize;
-  char *topology, jobIdString[10], pattern[2] = "|";
-  char *seconds, execFile[10];
+  int i, pid[16], busyTable[16], job_counter, topologyType = -1, nodesSize;
+  char *topology, jobIdString[10];
   key_t key = 7869;
-  struct msgbuf bufReceive;
-  struct Job* job_entry;
 
   if (argc == 2)
   {
@@ -93,7 +94,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-      runScheduler(msqid, job_entry, bufReceive, job_counter, seconds, execFile, jobIdString, pattern);
+      runScheduler(msqid, job_entry, job_counter, jobIdString);
     }
   }
   else
@@ -105,8 +106,11 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-void runScheduler(int msqid, struct Job*  job_entry, struct msgbuf bufReceive, int job_counter, char * seconds, char * execFile, char * jobIdString, char pattern)
+void runScheduler(int msqid, struct Job *job_entry, int job_counter, char *jobIdString)
 {
+  char execFile[10], *seconds, pattern[2] = "|";
+  struct msgbuf bufReceive;
+
   /* Receives a msg from queue created by delayedMulti */
   MessageReceive(msqid, &bufReceive, 666, 0);
 
@@ -117,14 +121,18 @@ void runScheduler(int msqid, struct Job*  job_entry, struct msgbuf bufReceive, i
 
   /* Initializes job values */
   job_entry->jobId = job_counter;
-  job_entry->seconds = seconds;
+  job_entry->seconds = atoi(seconds);
   strcpy(job_entry->exeFile, execFile);
   job_entry->start_time = time(NULL);
   
-  alarm(job_entry->seconds);
+  alarm((*job_entry).seconds);
 }
 
-void delayed_message_send(int msqid, struct Job* job_entry) {
+// The function needs to receive an 'int', to describe what type of signal it is redefining
+void delayed_message_send(int sig) 
+{
+  char seconds[10];
+  sprintf(seconds, "%d", job_entry->seconds);
   /* TO DO: Send job_entry inside a message queue with another msqid */
-  CreateMessage(msqid, job_entry->jobId, job_entry->seconds, job_entry->exeFile, 666);
+  CreateMessage(msqid, job_entry->jobId, seconds, job_entry->exeFile, 666);
 }

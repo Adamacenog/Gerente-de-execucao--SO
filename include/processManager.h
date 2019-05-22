@@ -13,9 +13,14 @@ Guilherme Lopes. - mat. 15/0128215
     #include <string.h>
     #include <stdlib.h>
     #include <errno.h>
+    #include <unistd.h>
+    #include <time.h>
+    #include <signal.h>
 #endif
 
-#ifndef _ProcessManager_library
-  #define _ProcessManager_library
-    #include "processManager.h"
+#ifndef _Queue_library
+  #define _Queue_library
+    #include "messageQueue.h"
 #endif
+
+void endExecution(int);

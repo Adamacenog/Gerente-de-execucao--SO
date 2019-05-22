@@ -6,19 +6,9 @@ Danillo Neves. - mat. 14/0135839
 Guilherme Lopes. - mat. 15/0128215
 */
 
-#ifndef _Primary_libraries
-  #define _Primary_libraries
-    #include <stdio.h>
-    #include <ctype.h>
-    #include <string.h>
-    #include <stdlib.h>
-    #include <errno.h>
-    #include <unistd.h>
-#endif
-
-#ifndef _Queue_library
-  #define _Queue_library
-    #include "messageQueue.h"
+#ifndef _delayedMulti_ProcessExecution_library
+  #define _delayedMulti_ProcessExecution_library
+    #include "delayedMulti-ProcessExecution.h"
 #endif
 
 int main(int argc, char *argv[])
