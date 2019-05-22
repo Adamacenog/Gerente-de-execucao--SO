@@ -8,8 +8,8 @@ Alunos:
 
 * Alex Nascimento - Matrícula 15/0115474
 * Andre Garrido Damaceno - Matrícula 15/0117531
-* Danillo Neves Souza - Matricula 14/0135839
-* Guilherme Lopes
+* Danillo Neves Souza - Matrícula 14/0135839
+* Guilherme Lopes - Matrícula 15/0128215
 
 ---------------------------------------------------------------------------------------
 
