@@ -13,43 +13,51 @@ Guilherme Lopes. - mat. 15/0128215
 
 void addToQueue(jobQueue **jobHead, job job)
 {
-    jobQueue *aux;
+    jobQueue *aux, *aux2;
+
+    aux = (jobQueue*)malloc(sizeof(jobQueue));    
+
+    if (aux == NULL)
+    {
+        printf("Error on malloc.");
+        exit(1);
+    }
+    
+    (*aux).remainingSeconds = job.seconds;
+    (*aux).job = job;
+    (*aux).next = NULL;
     
     if ((*jobHead) == NULL)
     {
-        (*jobHead) = (jobQueue*)malloc(sizeof(jobQueue));    
-
-        if ((*jobHead) == NULL)
-        {
-            printf("Error on malloc.");
-            exit(1);
-        }
-        
-        (**jobHead).remainingSeconds = job.seconds;
-        (**jobHead).job = job;
-        (**jobHead).next = NULL;
+        (*jobHead) = aux;
     }
     else
     {
-        aux = *jobHead;
+        aux2 = *jobHead;
 
-        while(aux->next != NULL && (*aux).remainingSeconds < job.seconds)
+        while(aux2->next != NULL && (*aux2->next).remainingSeconds < job.seconds)
         {
-           aux = aux->next;
+           aux2 = aux->next;
         }
 
-        aux->next = (jobQueue*)malloc(sizeof(jobQueue));    
-        aux = aux->next;
-
-        if (aux == NULL)
+        if(aux2 == (*jobHead))
         {
-            printf("Error on malloc.");
-            exit(1);
+            if ((**jobHead).remainingSeconds < job.seconds)
+            {
+                aux->next = (*jobHead)->next;
+                (*jobHead)->next = aux;
+            }
+            else
+            {           
+                aux->next = (*jobHead);
+                (*jobHead) = aux;
+            }            
         }
-        
-        (*aux).remainingSeconds = job.seconds;
-        (*aux).job = job;
-        (*aux).next = NULL;
+        else
+        {
+            aux->next = aux2->next;
+            aux2->next = aux;
+        }        
     }
 }
 
