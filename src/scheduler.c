@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
           {
             sprintf(jobIdString, "%d", (i + 1));
             execl("./gerente_execucao", "gerente_execucao", jobIdString, NULL);
+            
           }
         }
       }
@@ -92,7 +93,14 @@ int main(int argc, char *argv[])
 
     signal(SIGALRM, delayed_message_send);
     job_counter = 1;
+
     job_entry = (job *)malloc(sizeof(job));
+
+    if (job_entry == NULL)
+    {
+      printf("Error on malloc.");
+      exit(1);
+    }
 
     while (1)
     {
@@ -112,10 +120,17 @@ void runScheduler(int msqid, struct Job *job_entry, int *job_counter, char *jobI
 {
   int alarm_Remaining;
 
-  if (receivedDelayedJob(msqid, *job_counter, job_entry))
+  if (receivedDelayedJob(msqid, (*job_counter), job_entry))
   {
+    printf("scheduler-MENSSAGE: %s\n", (*job_entry).exeFile);
+    printf("scheduler-SECONDS: %d\n", (*job_entry).seconds);
     alarm_Remaining = alarm(0);
-    decreaseAllRemainingTimes(job_Queue_Head, ((*job_Queue_Head).remainingSeconds) - alarm_Remaining);
+    
+    if (job_Queue_Head != NULL)
+    {
+      decreaseAllRemainingTimes(job_Queue_Head, ((*job_Queue_Head).remainingSeconds) - alarm_Remaining);
+    }    
+
     addToQueue(&job_Queue_Head, (*job_entry));
     alarm((*job_Queue_Head).remainingSeconds);
     (*job_counter)++;
@@ -130,6 +145,7 @@ void delayed_message_send(int sig)
 
   if (job_Queue_Head != NULL)
   {
+    printf("EXECUTING JOB %d", (*job_Queue_Head).job.jobId);
     decreaseAllRemainingTimes(job_Queue_Head, (*job_Queue_Head).remainingSeconds);
 
     while (job_Queue_Head != NULL && (*job_Queue_Head).job.seconds <= 0)

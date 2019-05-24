@@ -22,23 +22,17 @@ Guilherme Lopes. - mat. 15/0128215
 typedef struct Job
 {
   int jobId;
-  /* TO DO: change back to integer */
   int seconds;
   time_t start_time;
   time_t end_time;
-  char *exeFile;
+  char exeFile[50];
 } job;
 
-typedef struct Finished_Job_Table
+typedef struct FinishedJobTable
 {
-  int jobId;
-  /* TO DO: change back to integer */
-  int seconds;
-  time_t start_time;
-  time_t end_time;
-  char *exeFile;
+  struct Job job;
   struct Finished_Job_Table *next;
-} finished_Job_Table;
+} finishedJobTable;
 
 typedef struct JobQueue
 {
@@ -51,3 +45,4 @@ void addToQueue(jobQueue **, job);
 void removeHead(jobQueue **);
 void deleteQueue(jobQueue **);
 void decreaseAllRemainingTimes(jobQueue *, int);
+void addToJobTable(finishedJobTable **, job);

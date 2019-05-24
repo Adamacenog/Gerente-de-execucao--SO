@@ -27,6 +27,8 @@ int queueCreator(key_t key)
 
 int messageReceive(int msqid, struct msgbuf *rbuf, long msgtype, int block)
 {
+  errno = 0;
+  
   // Receives the message with type msgtype
   // msgrcv's flag is 0, so that it is blocked ultil a msg with type msgtype is in the queue
   if(block == 1) 
@@ -52,7 +54,7 @@ int messageReceive(int msqid, struct msgbuf *rbuf, long msgtype, int block)
   if (errno == ENOMSG)
     return 0;
   else
-    return 1;
+    return 1;   
 }
 
 void messageSend(int msqid, struct msgbuf sbuf, size_t buf_length)
@@ -105,21 +107,23 @@ void createMessage(int msqid, int jobId, char *seconds, char *execFile, long mty
 int receivedDelayedJob(int msqid, int job_counter, struct Job *job_entry)
 {
   struct msgbuf bufReceive;
-  char execFile[10], *seconds, pattern[2] = "|";
+  char exeFile[50], seconds[10], jobPid[10], pattern[2] = "|";
 
   /* Receives a msg from queue created by delayedMulti */
   if (messageReceive(msqid, &bufReceive, 666, 0))
   {
     /* Cuts the string with the pattern to be parsed */
-    strcpy(seconds,strtok(bufReceive.mtext,pattern));
-    strcpy(execFile,strtok(bufReceive.mtext,pattern));
+    /*TO DO: REPLACE STRTOK, DONT USE IT!!!*/
+    strcpy(jobPid, strtok(bufReceive.mtext,pattern));
+    strcpy(seconds, strtok(NULL,pattern));
+    strcpy(exeFile,strtok(NULL,pattern));
 
     /* Initializes job values */
     (*job_entry).jobId = job_counter;
     (*job_entry).seconds = atoi(seconds);
-    strcpy((*job_entry).exeFile, execFile);
+    strcpy((*job_entry).exeFile, exeFile);
     (*job_entry).start_time = time(NULL);
-
+  
     return 1;
   }
 

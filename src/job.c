@@ -85,3 +85,33 @@ void decreaseAllRemainingTimes(jobQueue *jobHead, int amount2Decrease)
         jobHead = jobHead->next;
     }
 }
+
+void addToJobTable(finishedJobTable **finishedJobTableHead, job finishedJob)
+{
+    finishedJobTable *aux, *aux2;
+
+    aux = (finishedJobTable *) malloc(sizeof(finishedJobTable));
+    if (aux == NULL)
+    {
+        printf("Error on malloc.");
+        exit(1);
+    }
+
+    aux->job = finishedJob;
+    aux->next = NULL;
+
+    if ((*finishedJobTableHead) == NULL)
+    {
+        (*finishedJobTableHead) = aux;        
+    }
+    else
+    {
+       /* aux2 =  *finishedJobTableHead;
+        while (aux2->next != NULL)
+        {
+            aux2 = aux2->next;
+        }
+
+        aux2->next = aux;*/
+    }    
+}

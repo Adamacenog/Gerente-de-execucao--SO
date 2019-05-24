@@ -23,7 +23,7 @@ _OBJ2 = scheduler.o messageQueue.o job.o
 OBJ2 = $(patsubst %,$(ODIR)/%,$(_OBJ2))
 
 _OBJ3 = processManager.o messageQueue.o
-OBJ3 = $(patsubst %,$(ODIR)/%,$(_OBJ2))
+OBJ3 = $(patsubst %,$(ODIR)/%,$(_OBJ3))
 
 $(ODIR)/%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

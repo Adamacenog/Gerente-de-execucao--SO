@@ -11,37 +11,47 @@ Guilherme Lopes. - mat. 15/0128215
     #include "processManager.h"
 #endif
 
-int main(int argc, char const *argv[]) {
-
-    int process_manager_id, msqid;
-    int neighboords[4];
-    key_t key = 7869;
-    
-    if(argc == 2) {
-        signal(SIGTERM, endExecution);
-        process_manager_id = atoi(argv[1]);
-
-        /* If process_manager_id == 0, it accesses scheduler queue */
-        if(process_manager_id == 0) {
-           msqid = QueueCreator(key);
-           if(msqid < 0) {
-               printf("Wrong initializion of Message Queue\n");
-               exit(0);
-           }
-        }
-
-        
-
+int main(int argc, char const *argv[]) { 
+ 
+    key_t key = 7869; 
+    struct msgbuf pmBuffer; 
+    int process_manager_id, msqid; 
+    char execFile[10], *seconds, pattern[2] = "|"; 
+     
+    if(argc == 2) { 
+        signal(SIGTERM, endExecution); 
+        process_manager_id = atoi(argv[1]); 
+        printf("PROCESS MANAGER ID: %d\n", process_manager_id);
+        /* If process_manager_id == 1, it accesses scheduler queue */ 
+        if(process_manager_id == 1) { 
+           msqid = queueCreator(key); 
+ 
+            /* Receives a msg from queue created by delayedMulti */ 
+           if (messageReceive(msqid, &pmBuffer, 1, 0)) 
+           { 
+               printf("BUFFER: %s", pmBuffer.mtext);
+                /* Cuts the string with the pattern to be parsed */ 
+                strcpy(seconds,strtok(pmBuffer.mtext,pattern)); 
+                strcpy(execFile,strtok(pmBuffer.mtext,pattern)); 
+           } 
+ 
+        } 
+        else { 
+ 
+        } 
+ 
+         
+ 
+    }  
+     
+    else { 
+        printf("Unsificcient argument numbers."); 
+        exit(1); 
     } 
-    
-    else {
-        printf("Unsificcient argument numbers.");
-        exit(1);
-    }
-
-    
-    
-    return 0;
+ 
+     
+     
+    return 0; 
 }
 
 // The function needs to receive an 'int', to describe what type of signal it is redefining
