@@ -46,3 +46,4 @@ void removeHead(jobQueue **);
 void deleteQueue(jobQueue **);
 void decreaseAllRemainingTimes(jobQueue *, int);
 void addToJobTable(finishedJobTable **, job);
+void printfJobToExecute(jobQueue *);

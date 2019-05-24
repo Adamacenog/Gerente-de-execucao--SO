@@ -124,15 +124,18 @@ void runScheduler(int msqid, struct Job *job_entry, int *job_counter, char *jobI
   {
     printf("scheduler-MENSSAGE: %s\n", (*job_entry).exeFile);
     printf("scheduler-SECONDS: %d\n", (*job_entry).seconds);
-    alarm_Remaining = alarm(0);
+    /*alarm_Remaining = alarm(0);
     
     if (job_Queue_Head != NULL)
     {
       decreaseAllRemainingTimes(job_Queue_Head, ((*job_Queue_Head).remainingSeconds) - alarm_Remaining);
-    }    
-
+    }    */
+    /* TO DO: FIX addToQueue - IS CAUSING SEG FAULT, try 2 sec, 2 sec, 3 sec*/
     addToQueue(&job_Queue_Head, (*job_entry));
-    alarm((*job_Queue_Head).remainingSeconds);
+    printf("\nQueue:\n");
+    printfJobToExecute(job_Queue_Head);
+    printf("\n");
+    //alarm((*job_Queue_Head).remainingSeconds);
     (*job_counter)++;
   }
 
@@ -145,7 +148,7 @@ void delayed_message_send(int sig)
 
   if (job_Queue_Head != NULL)
   {
-    printf("EXECUTING JOB %d", (*job_Queue_Head).job.jobId);
+    printf("EXECUTING JOB %d\n", (*job_Queue_Head).job.jobId);
     decreaseAllRemainingTimes(job_Queue_Head, (*job_Queue_Head).remainingSeconds);
 
     while (job_Queue_Head != NULL && (*job_Queue_Head).job.seconds <= 0)

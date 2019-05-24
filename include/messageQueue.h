@@ -45,3 +45,4 @@ void messageSend(int, struct msgbuf, size_t);
 void queueDestroy(int msqid);
 void createMessage(int, int, char *, char *, long);
 int receivedDelayedJob(int, int, struct Job *);
+void copyNremoveByPattern(char *, int, char *, int, char);

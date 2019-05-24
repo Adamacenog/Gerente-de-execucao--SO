@@ -113,19 +113,45 @@ int receivedDelayedJob(int msqid, int job_counter, struct Job *job_entry)
   if (messageReceive(msqid, &bufReceive, 666, 0))
   {
     /* Cuts the string with the pattern to be parsed */
-    /*TO DO: REPLACE STRTOK, DONT USE IT!!!*/
-    strcpy(jobPid, strtok(bufReceive.mtext,pattern));
-    strcpy(seconds, strtok(NULL,pattern));
-    strcpy(exeFile,strtok(NULL,pattern));
+    copyNremoveByPattern(jobPid, 10, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(seconds, 10, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(exeFile, 50, bufReceive.mtext, 500, *pattern);
 
     /* Initializes job values */
     (*job_entry).jobId = job_counter;
     (*job_entry).seconds = atoi(seconds);
     strcpy((*job_entry).exeFile, exeFile);
-    (*job_entry).start_time = time(NULL);
+    (*job_entry).start_time = 0;
+    (*job_entry).end_time = 0;
   
     return 1;
   }
 
   return 0;
+}
+
+void copyNremoveByPattern(char *destination, int sizeOfDest, char *source, int sizeOfSource, char pattern)
+{
+  int i;
+
+  // Copies the dest to source until pattern.
+  for (i = 0; i < sizeOfDest && i < sizeOfSource; i++)
+  {
+    if (source[i] == pattern || source[i] == '\0')
+    {
+      destination[i] = 0;
+      break;
+    }      
+    
+    destination[i] = source[i];
+  }
+
+  // Get's source length
+  sizeOfDest = strlen(destination);
+
+  // Erase from dest. the source
+  for (i = 0; i < (sizeOfSource - sizeOfDest); i++)
+  {
+    source[i] = source[i + sizeOfDest + 1]; // Plus 1 because of pattern.
+  }
 }
