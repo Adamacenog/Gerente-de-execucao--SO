@@ -21,10 +21,10 @@ int main(int argc, char *argv[])
   if (argc == 3)
   {
     // Creates the queue that is used to communicate with scheduler
-    msqid = QueueCreator(key);
+    msqid = queueCreator(key);
 
     // Sends the program exec file and delayed execution time to the scheduler (using the queue)
-    CreateMessage(msqid, getpid(), argv[1], argv[2], mtype);
+    createMessage(msqid, getpid(), argv[1], argv[2], mtype);
   }
   else
   {

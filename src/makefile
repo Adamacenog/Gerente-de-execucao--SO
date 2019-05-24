@@ -10,7 +10,7 @@ LIBS=-lm
 _DEPS = delayedMulti-ProcessExecution.h messageQueue.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_DEPS2 = scheduler.h messageQueue.h
+_DEPS2 = scheduler.h messageQueue.h job.h
 DEPS2 = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 _DEPS3 = processManager.h messageQueue.h
@@ -19,7 +19,7 @@ DEPS2 = $(patsubst %,$(IDIR)/%,$(_DEPS))
 _OBJ = delayedMulti-ProcessExecution.o messageQueue.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-_OBJ2 = scheduler.o messageQueue.o
+_OBJ2 = scheduler.o messageQueue.o job.o
 OBJ2 = $(patsubst %,$(ODIR)/%,$(_OBJ2))
 
 _OBJ3 = processManager.o messageQueue.o

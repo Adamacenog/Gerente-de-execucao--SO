@@ -13,11 +13,12 @@ Guilherme Lopes
 
 // Those variables need to be global, so that the signal redefinition can use them.
 int msqid;
-struct Job *job_entry;
+struct JobQueue *job_Queue_Head;
 
 int main(int argc, char *argv[])
 {
-  int i, pid[16], busyTable[16], job_counter, topologyType = -1, nodesSize;
+  struct Job *job_entry;
+  int i, pid[16], busyTable[16], job_counter, topologyType = -1, nodes_Size;
   char *topology, jobIdString[10];
   key_t key = 7869;
 
@@ -43,19 +44,19 @@ int main(int argc, char *argv[])
     if (strcmp(topology, "hypercube") == 0)
     {
       topologyType = 1;
-      nodesSize = 16;
+      nodes_Size = 16;
     }
 
     if (strcmp(topology, "torus") == 0)
     {
       topologyType = 2;
-      nodesSize = 16;
+      nodes_Size = 16;
     }
 
     if (strcmp(topology, "fat_tree") == 0)
     {
       topologyType = 3;
-      nodesSize = 15;
+      nodes_Size = 15;
     }
 
     free(topology);
@@ -63,10 +64,10 @@ int main(int argc, char *argv[])
     if (topologyType != -1)
     {
       /* Initializes message queue */
-      msqid = QueueCreator(key);
+      msqid = queueCreator(key);
 
       /* Creates N process that will execute the process manager logic */
-      for (i = 0; i < nodesSize; i++)
+      for (i = 0; i < nodes_Size; i++)
       {
         busyTable[i] = 0;
 
@@ -82,7 +83,7 @@ int main(int argc, char *argv[])
           // Checks whether it is processes father (pid != 0) or child (pid == 0)
           if (pid[i] == 0)
           {
-            sprintf(jobIdString, "%d", i);
+            sprintf(jobIdString, "%d", (i + 1));
             execl("./gerente_execucao", "gerente_execucao", jobIdString, NULL);
           }
         }
@@ -91,10 +92,11 @@ int main(int argc, char *argv[])
 
     signal(SIGALRM, delayed_message_send);
     job_counter = 1;
+    job_entry = (job *)malloc(sizeof(job));
 
     while (1)
     {
-      runScheduler(msqid, job_entry, job_counter, jobIdString);
+      runScheduler(msqid, job_entry, &job_counter, jobIdString);
     }
   }
   else
@@ -106,33 +108,41 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-void runScheduler(int msqid, struct Job *job_entry, int job_counter, char *jobIdString)
+void runScheduler(int msqid, struct Job *job_entry, int *job_counter, char *jobIdString)
 {
-  char execFile[10], *seconds, pattern[2] = "|";
-  struct msgbuf bufReceive;
+  int alarm_Remaining;
 
-  /* Receives a msg from queue created by delayedMulti */
-  MessageReceive(msqid, &bufReceive, 666, 0);
+  if (receivedDelayedJob(msqid, *job_counter, job_entry))
+  {
+    alarm_Remaining = alarm(0);
+    decreaseAllRemainingTimes(job_Queue_Head, ((*job_Queue_Head).remainingSeconds) - alarm_Remaining);
+    addToQueue(&job_Queue_Head, (*job_entry));
+    alarm((*job_Queue_Head).remainingSeconds);
+    (*job_counter)++;
+  }
 
-  /* Cuts the string with the pattern to be parsed */
-  strcpy(jobIdString,strtok(bufReceive.mtext,pattern));
-  strcpy(seconds,strtok(bufReceive.mtext,pattern));
-  strcpy(execFile,strtok(bufReceive.mtext,pattern));
-
-  /* Initializes job values */
-  job_entry->jobId = job_counter;
-  job_entry->seconds = atoi(seconds);
-  strcpy(job_entry->exeFile, execFile);
-  job_entry->start_time = time(NULL);
-  
-  alarm((*job_entry).seconds);
 }
 
 // The function needs to receive an 'int', to describe what type of signal it is redefining
 void delayed_message_send(int sig) 
 {
   char seconds[10];
-  sprintf(seconds, "%d", job_entry->seconds);
-  /* TO DO: Send job_entry inside a message queue with another msqid */
-  CreateMessage(msqid, job_entry->jobId, seconds, job_entry->exeFile, 666);
+
+  if (job_Queue_Head != NULL)
+  {
+    decreaseAllRemainingTimes(job_Queue_Head, (*job_Queue_Head).remainingSeconds);
+
+    while (job_Queue_Head != NULL && (*job_Queue_Head).job.seconds <= 0)
+    {
+      sprintf(seconds, "%d", (*job_Queue_Head).job.seconds);
+      /* TO DO: Send job_Queue_Head inside a message queue with another mtype */
+      createMessage(msqid, (*job_Queue_Head).job.jobId, seconds, (*job_Queue_Head).job.exeFile, 1);
+      removeHead(&job_Queue_Head);
+    }
+
+    if (job_Queue_Head != NULL)
+    {
+      alarm((*job_Queue_Head).remainingSeconds);
+    }      
+  }
 }

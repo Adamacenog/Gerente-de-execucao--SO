@@ -6,22 +6,12 @@ Danillo Neves. - mat. 14/0135839
 Guilherme Lopes. - mat. 15/0128215
 */
 
-#ifndef _Primary_libraries
-  #define _Primary_libraries
-    #include <stdio.h>
-    #include <ctype.h>
-    #include <string.h>
-    #include <stdlib.h>
-    #include <errno.h>
-    #include <unistd.h>
-#endif
-
 #ifndef _Queue_library
   #define _Queue_library
     #include "messageQueue.h"
 #endif
 
-int QueueCreator(key_t key)
+int queueCreator(key_t key)
 {
   int msqid;
 
@@ -35,29 +25,37 @@ int QueueCreator(key_t key)
   return msqid;
 }
 
-void MessageReceive(int msqid, struct msgbuf *rbuf, long msgtype, int block)
+int messageReceive(int msqid, struct msgbuf *rbuf, long msgtype, int block)
 {
   // Receives the message with type msgtype
   // msgrcv's flag is 0, so that it is blocked ultil a msg with type msgtype is in the queue
-  if(block == 1) {
-    if (msgrcv(msqid, rbuf, MSGSZ, msgtype, 0) < 0)
+  if(block == 1) 
+  {
+    if (msgrcv(msqid, rbuf, MSGSZ, msgtype, 0) < 0 && errno != ENOMSG)
     {
       printf("Error receiving the message from queue.\n");
       perror("msgrcv");
       exit(1);
     }
   }
-  else {
-    if (msgrcv(msqid, rbuf, MSGSZ, msgtype, IPC_NOWAIT) < 0)
+  else 
+  {
+    if (msgrcv(msqid, rbuf, MSGSZ, msgtype, IPC_NOWAIT) < 0 && errno != ENOMSG)
     {
       printf("Error receiving the message from queue.\n");
       perror("msgrcv");
       exit(1);
     }
   }
+
+  // If no message was received, return 0, else, 1
+  if (errno == ENOMSG)
+    return 0;
+  else
+    return 1;
 }
 
-void MessageSend(int msqid, struct msgbuf sbuf, size_t buf_length)
+void messageSend(int msqid, struct msgbuf sbuf, size_t buf_length)
 {
   // Sends the message in sbuf (with it's type and content)
   // msgsnd's flag is IPC_NOWAIT, so it is not a blocking call
@@ -70,7 +68,7 @@ void MessageSend(int msqid, struct msgbuf sbuf, size_t buf_length)
   }
 }
 
-void QueueDestroy(int msqid)
+void queueDestroy(int msqid)
 {
   struct msqid_ds *buf;
 
@@ -82,7 +80,7 @@ void QueueDestroy(int msqid)
   }
 }
 
-void CreateMessage(int msqid, int jobId, char *seconds, char *execFile, long mtype)
+void createMessage(int msqid, int jobId, char *seconds, char *execFile, long mtype)
 {
   char jobIdString[10];
   struct msgbuf buf;
@@ -101,5 +99,29 @@ void CreateMessage(int msqid, int jobId, char *seconds, char *execFile, long mty
 
   buf.mtype = mtype;
 
-  MessageSend(msqid, buf, (strlen(buf.mtext) + 1));
+  messageSend(msqid, buf, (strlen(buf.mtext) + 1));
+}
+
+int receivedDelayedJob(int msqid, int job_counter, struct Job *job_entry)
+{
+  struct msgbuf bufReceive;
+  char execFile[10], *seconds, pattern[2] = "|";
+
+  /* Receives a msg from queue created by delayedMulti */
+  if (messageReceive(msqid, &bufReceive, 666, 0))
+  {
+    /* Cuts the string with the pattern to be parsed */
+    strcpy(seconds,strtok(bufReceive.mtext,pattern));
+    strcpy(execFile,strtok(bufReceive.mtext,pattern));
+
+    /* Initializes job values */
+    (*job_entry).jobId = job_counter;
+    (*job_entry).seconds = atoi(seconds);
+    strcpy((*job_entry).exeFile, execFile);
+    (*job_entry).start_time = time(NULL);
+
+    return 1;
+  }
+
+  return 0;
 }

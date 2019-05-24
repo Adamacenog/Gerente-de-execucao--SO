@@ -29,6 +29,17 @@ typedef struct Job
   char *exeFile;
 } job;
 
+typedef struct Finished_Job_Table
+{
+  int jobId;
+  /* TO DO: change back to integer */
+  int seconds;
+  time_t start_time;
+  time_t end_time;
+  char *exeFile;
+  struct Finished_Job_Table *next;
+} finished_Job_Table;
+
 typedef struct JobQueue
 {
   int remainingSeconds;

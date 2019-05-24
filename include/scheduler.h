@@ -33,5 +33,5 @@ Guilherme Lopes. - mat. 15/0128215
     #include "job.h"
 #endif
 
-void runScheduler(int, struct Job *, int, char *);
+void runScheduler(int, struct Job *, int *, char *);
 void delayed_message_send(int);

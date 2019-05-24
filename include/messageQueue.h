@@ -25,6 +25,11 @@ Guilherme Lopes. - mat. 15/0128215
     #include <sys/msg.h>
 #endif
 
+#ifndef _Job_Queue
+  #define _Job_Queue
+    #include "job.h"
+#endif
+
 #define MSGSZ 500
 
 // Declare the message structure.
@@ -34,8 +39,9 @@ typedef struct msgbuf
 	char mtext[MSGSZ];
 } msgbuf;
 
-int QueueCreator(key_t);
-void MessageReceive(int, struct msgbuf *, long, int);
-void MessageSend(int, struct msgbuf, size_t);
-void QueueDestroy(int msqid);
-void CreateMessage(int, int, char *, char *, long);
+int queueCreator(key_t);
+int messageReceive(int, struct msgbuf *, long, int);
+void messageSend(int, struct msgbuf, size_t);
+void queueDestroy(int msqid);
+void createMessage(int, int, char *, char *, long);
+int receivedDelayedJob(int, int, struct Job *);
