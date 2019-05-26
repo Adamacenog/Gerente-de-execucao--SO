@@ -13,8 +13,8 @@ Guilherme Lopes. - mat. 15/0128215
 
 void addToQueue(jobQueue **jobHead, job job)
 {
-    jobQueue *aux, *aux2;
-
+    jobQueue *aux, *aux2, *aux3;
+    
     aux = (jobQueue*)malloc(sizeof(jobQueue));    
 
     if (aux == NULL)
@@ -30,52 +30,58 @@ void addToQueue(jobQueue **jobHead, job job)
     aux->job.end_time = job.end_time;
     strcpy(aux->job.exeFile, job.exeFile);
     aux->next = NULL;
-    
+
     if ((*jobHead) == NULL)
     {
         (*jobHead) = aux;
     }
     else
     {
-        aux2 = *jobHead;
-        printf("seg\n");
-        printf("JobId: %d\n", (*jobHead)->job.jobId);
-        printf("next is null? %d\n", aux2->next == NULL);
-        while(aux2->next != NULL && aux2->next->remainingSeconds < job.seconds)
+        aux2 = (*jobHead);
+
+        while(aux2->next != NULL && aux2->remainingSeconds < job.seconds)
         {
-            printf("JobId: %d\n", aux2->next->job.jobId);
-           aux2 = aux->next;
-           printf("JobId: %d\n", aux2->job.jobId);  // It is not printing.... although it should
-           printf("next is null? %d\n", aux2->next == NULL);           
+            aux3 = aux2;
+            aux2 = aux2->next;
         }
-        printf("falt\n");
-        if(aux2 == (*jobHead))
+
+        if (aux2 == (*jobHead))
         {
-            if ((*jobHead)->remainingSeconds < job.seconds)
+            if (aux2->remainingSeconds > job.seconds)
             {
-                aux->next = (*jobHead)->next;
-                (*jobHead)->next = aux;
+                aux->next = (*jobHead);
+                (*jobHead) = aux;
             }
             else
-            {           
-                aux->next = *jobHead;
-                (*jobHead) = aux;
+            {
+                (*jobHead)->next = aux;
             }            
         }
         else
         {
-            aux->next = aux2->next;
-            aux2->next = aux;
-        }        
+            if (aux2->remainingSeconds > job.seconds)
+            {
+                aux->next = aux2;
+                aux3->next = aux;
+            }
+            else
+            {
+                aux2->next = aux;
+            } 
+        }
     }
 }
 
 void removeHead(jobQueue **jobHead)
 {
     jobQueue *aux;
-    aux = (*jobHead);
-    (*jobHead) = (*jobHead)->next;
-    free(aux);
+
+    if ((*jobHead) != NULL)
+    {
+        aux = (*jobHead);
+        (*jobHead) = (*jobHead)->next;
+        free(aux);
+    }
 }
 
 void deleteQueue(jobQueue **jobHead)
@@ -90,11 +96,12 @@ void decreaseAllRemainingTimes(jobQueue *jobHead, int amount2Decrease)
 {
     while(jobHead != NULL)
     {
-        (*jobHead).remainingSeconds -= amount2Decrease;
+        jobHead->remainingSeconds -= amount2Decrease;
         jobHead = jobHead->next;
     }
 }
 
+/* TO DO: Finish this function */
 void addToJobTable(finishedJobTable **finishedJobTableHead, job finishedJob)
 {
     finishedJobTable *aux, *aux2;

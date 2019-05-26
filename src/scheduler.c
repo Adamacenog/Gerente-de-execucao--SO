@@ -124,18 +124,18 @@ void runScheduler(int msqid, struct Job *job_entry, int *job_counter, char *jobI
   {
     printf("scheduler-MENSSAGE: %s\n", (*job_entry).exeFile);
     printf("scheduler-SECONDS: %d\n", (*job_entry).seconds);
-    /*alarm_Remaining = alarm(0);
+    alarm_Remaining = alarm(0);
     
     if (job_Queue_Head != NULL)
     {
       decreaseAllRemainingTimes(job_Queue_Head, ((*job_Queue_Head).remainingSeconds) - alarm_Remaining);
-    }    */
+    }    
     /* TO DO: FIX addToQueue - IS CAUSING SEG FAULT, try 2 sec, 2 sec, 3 sec*/
     addToQueue(&job_Queue_Head, (*job_entry));
     printf("\nQueue:\n");
     printfJobToExecute(job_Queue_Head);
     printf("\n");
-    //alarm((*job_Queue_Head).remainingSeconds);
+    alarm((*job_Queue_Head).remainingSeconds);
     (*job_counter)++;
   }
 
@@ -148,13 +148,14 @@ void delayed_message_send(int sig)
 
   if (job_Queue_Head != NULL)
   {
-    printf("EXECUTING JOB %d\n", (*job_Queue_Head).job.jobId);
+    printf("ALARM INTERRUPT\n");
     decreaseAllRemainingTimes(job_Queue_Head, (*job_Queue_Head).remainingSeconds);
-
-    while (job_Queue_Head != NULL && (*job_Queue_Head).job.seconds <= 0)
+    
+    while (job_Queue_Head != NULL && (*job_Queue_Head).remainingSeconds <= 0)
     {
+      printf("EXECUTING JOB %d\n", (*job_Queue_Head).job.jobId);
       sprintf(seconds, "%d", (*job_Queue_Head).job.seconds);
-      /* TO DO: Send job_Queue_Head inside a message queue with another mtype */
+      /* Message is created and sent to node 1 (whitch is node 0), with mtype 1 */
       createMessage(msqid, (*job_Queue_Head).job.jobId, seconds, (*job_Queue_Head).job.exeFile, 1);
       removeHead(&job_Queue_Head);
     }
