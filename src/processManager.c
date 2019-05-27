@@ -15,15 +15,15 @@ int main(int argc, char const *argv[]) {
  
     key_t key = 7869; 
     struct msgbuf pmBuffer; 
-    int process_manager_id, msqid; 
+    int processManagerId, msqid; 
     char execFile[10], *seconds, pattern[2] = "|"; 
      
     if(argc == 2) { 
         signal(SIGTERM, endExecution); 
-        process_manager_id = atoi(argv[1]); 
-        printf("PROCESS MANAGER ID: %d\n", process_manager_id);
-        /* If process_manager_id == 1, it accesses scheduler queue */ 
-        if(process_manager_id == 1) { 
+        processManagerId = atoi(argv[1]); 
+        printf("PROCESS MANAGER ID: %d\n", processManagerId);
+        /* If processManagerId == 1, it accesses scheduler queue */ 
+        if(processManagerId == 1) { 
            msqid = queueCreator(key); 
  
             /* Receives a msg from queue created by delayedMulti */ 

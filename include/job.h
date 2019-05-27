@@ -23,8 +23,8 @@ typedef struct Job
 {
   int jobId;
   int seconds;
-  time_t start_time;
-  time_t end_time;
+  time_t startTime;
+  time_t endTime;
   char exeFile[50];
 } job;
 

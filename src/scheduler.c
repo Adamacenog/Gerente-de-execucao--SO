@@ -18,12 +18,12 @@ struct FinishedJobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NU
 
 int main(int argc, char *argv[])
 {
-  struct Job *job_entry;
-  int i, pid[16], busyTable[16], job_counter, topologyType = -1, nodes_Size;
+  struct Job *jobEntry;
+  int i, pid[16], busyTable[16], jobCounter, topologyType = -1, nodesSize;
   char *topology, jobIdString[10];
   key_t key = 7869;
 
-  signal(SIGALRM, delayed_message_send);
+  signal(SIGALRM, delayedMessageSend);
   signal(SIGTERM, terminateScheduler);
 
   printf("My pid: %d\n", getpid());
@@ -50,19 +50,19 @@ int main(int argc, char *argv[])
     if (strcmp(topology, "hypercube") == 0)
     {
       topologyType = 1;
-      nodes_Size = 16;
+      nodesSize = 16;
     }
 
     if (strcmp(topology, "torus") == 0)
     {
       topologyType = 2;
-      nodes_Size = 16;
+      nodesSize = 16;
     }
 
     if (strcmp(topology, "fat_tree") == 0)
     {
       topologyType = 3;
-      nodes_Size = 15;
+      nodesSize = 15;
     }
 
     free(topology);
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
       msqid = queueCreator(key);
 
       /* Creates N process that will execute the process manager logic */
-      for (i = 0; i < nodes_Size; i++)
+      for (i = 0; i < nodesSize; i++)
       {
         busyTable[i] = 0;
 
@@ -97,10 +97,10 @@ int main(int argc, char *argv[])
       }
     }
 
-    job_counter = 1;
-    job_entry = (job *)malloc(sizeof(job));
+    jobCounter = 1;
+    jobEntry = (job *)malloc(sizeof(job));
 
-    if (job_entry == NULL)
+    if (jobEntry == NULL)
     {
       printf("Error on malloc.");
       exit(1);
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-      runScheduler(msqid, job_entry, &job_counter, jobIdString);
+      runScheduler(msqid, jobEntry, &jobCounter, jobIdString);
     }
   }
   else
@@ -120,33 +120,33 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-void runScheduler(int msqid, struct Job *job_entry, int *job_counter, char *jobIdString)
+void runScheduler(int msqid, struct Job *jobEntry, int *jobCounter, char *jobIdString)
 {
-  int alarm_Remaining;
+  int alarmRemaining;
 
-  if (receivedDelayedJob(msqid, (*job_counter), job_entry))
+  if (receivedDelayedJob(msqid, (*jobCounter), jobEntry))
   {
-    printf("scheduler-MENSSAGE: %s\n", (*job_entry).exeFile);
-    printf("scheduler-SECONDS: %d\n", (*job_entry).seconds);
-    alarm_Remaining = alarm(0);
+    printf("scheduler-MENSSAGE: %s\n", (*jobEntry).exeFile);
+    printf("scheduler-SECONDS: %d\n", (*jobEntry).seconds);
+    alarmRemaining = alarm(0);
     
     if (jobQueueHead != NULL)
     {
-      decreaseAllRemainingTimes(jobQueueHead, ((*jobQueueHead).remainingSeconds) - alarm_Remaining);
+      decreaseAllRemainingTimes(jobQueueHead, ((*jobQueueHead).remainingSeconds) - alarmRemaining);
     }    
     /* TO DO: FIX addToQueue - IS CAUSING SEG FAULT, try 2 sec, 2 sec, 3 sec*/
-    addToQueue(&jobQueueHead, (*job_entry));
+    addToQueue(&jobQueueHead, (*jobEntry));
     printf("\nQueue:\n");
     printfJobToExecute(jobQueueHead);
     printf("\n");
     alarm((*jobQueueHead).remainingSeconds);
-    (*job_counter)++;
+    (*jobCounter)++;
   }
 
 }
 
 // The function needs to receive an 'int', to describe what type of signal it is redefining
-void delayed_message_send(int sig) 
+void delayedMessageSend(int sig) 
 {
   char seconds[10];
 
@@ -175,6 +175,8 @@ void delayed_message_send(int sig)
 void terminateScheduler(int sig)
 {
   printf("\n\nShuting down...\n");
+
+  /* TO DO: 'KILL' all nodes, call 'wait' for all nodes... */
   
   if (jobQueueHead != NULL)
   {

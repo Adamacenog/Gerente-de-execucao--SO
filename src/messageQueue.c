@@ -121,8 +121,8 @@ int receivedDelayedJob(int msqid, int job_counter, struct Job *job_entry)
     (*job_entry).jobId = job_counter;
     (*job_entry).seconds = atoi(seconds);
     strcpy((*job_entry).exeFile, exeFile);
-    (*job_entry).start_time = 0;
-    (*job_entry).end_time = 0;
+    (*job_entry).startTime = 0;
+    (*job_entry).endTime = 0;
   
     return 1;
   }

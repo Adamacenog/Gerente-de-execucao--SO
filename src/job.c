@@ -26,8 +26,8 @@ void addToQueue(jobQueue **jobHead, job job)
     aux->remainingSeconds = job.seconds;
     aux->job.jobId = job.jobId;
     aux->job.seconds = job.seconds;
-    aux->job.start_time = job.start_time;
-    aux->job.end_time = job.end_time;
+    aux->job.startTime = job.startTime;
+    aux->job.endTime = job.endTime;
     strcpy(aux->job.exeFile, job.exeFile);
     aux->next = NULL;
 
@@ -147,8 +147,8 @@ void printfJobTable(finishedJobTable *finishedJobTableHead)
         printf("---------------------------\n");
         printf("JobId: %d\n", finishedJobTableHead->job.jobId);
         printf("Seconds: %d\n", finishedJobTableHead->job.seconds);
-        printf("StartTime: %ld\n", finishedJobTableHead->job.start_time);
-        printf("EndTime: %ld\n", finishedJobTableHead->job.end_time);
+        printf("StartTime: %ld\n", finishedJobTableHead->job.startTime);
+        printf("EndTime: %ld\n", finishedJobTableHead->job.endTime);
         printf("ExeFile: %s\n", finishedJobTableHead->job.exeFile);
         finishedJobTableHead = finishedJobTableHead->nextTable;
     }
@@ -163,8 +163,8 @@ void printfJobToExecute(jobQueue *jobHead)
         printf("Remaining seconds: %d\n", jobHead->remainingSeconds);
         printf("JobId: %d\n", jobHead->job.jobId);
         printf("Seconds: %d\n", jobHead->job.seconds);
-        printf("StartTime: %ld\n", jobHead->job.start_time);
-        printf("EndTime: %ld\n", jobHead->job.end_time);
+        printf("StartTime: %ld\n", jobHead->job.startTime);
+        printf("EndTime: %ld\n", jobHead->job.endTime);
         printf("ExeFile: %s\n", jobHead->job.exeFile);
         jobHead = jobHead->next;
     }
