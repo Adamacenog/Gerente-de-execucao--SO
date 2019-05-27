@@ -31,7 +31,7 @@ typedef struct Job
 typedef struct FinishedJobTable
 {
   struct Job job;
-  struct Finished_Job_Table *next;
+  struct FinishedJobTable *nextTable;
 } finishedJobTable;
 
 typedef struct JobQueue
@@ -45,5 +45,7 @@ void addToQueue(jobQueue **, job);
 void removeHead(jobQueue **);
 void deleteQueue(jobQueue **);
 void decreaseAllRemainingTimes(jobQueue *, int);
-void addToJobTable(finishedJobTable **, job);
+void addToJobTable(finishedJobTable **, finishedJobTable **, job);
 void printfJobToExecute(jobQueue *);
+void printfJobTable(finishedJobTable *);
+void deleteJobTable(finishedJobTable **, finishedJobTable **);

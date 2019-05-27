@@ -13,7 +13,8 @@ Guilherme Lopes
 
 // Those variables need to be global, so that the signal redefinition can use them.
 int msqid;
-struct JobQueue *job_Queue_Head;
+struct JobQueue *jobQueueHead = NULL;
+struct FinishedJobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NULL;
 
 int main(int argc, char *argv[])
 {
@@ -21,6 +22,11 @@ int main(int argc, char *argv[])
   int i, pid[16], busyTable[16], job_counter, topologyType = -1, nodes_Size;
   char *topology, jobIdString[10];
   key_t key = 7869;
+
+  signal(SIGALRM, delayed_message_send);
+  signal(SIGTERM, terminateScheduler);
+
+  printf("My pid: %d\n", getpid());
 
   if (argc == 2)
   {
@@ -91,9 +97,7 @@ int main(int argc, char *argv[])
       }
     }
 
-    signal(SIGALRM, delayed_message_send);
     job_counter = 1;
-
     job_entry = (job *)malloc(sizeof(job));
 
     if (job_entry == NULL)
@@ -126,16 +130,16 @@ void runScheduler(int msqid, struct Job *job_entry, int *job_counter, char *jobI
     printf("scheduler-SECONDS: %d\n", (*job_entry).seconds);
     alarm_Remaining = alarm(0);
     
-    if (job_Queue_Head != NULL)
+    if (jobQueueHead != NULL)
     {
-      decreaseAllRemainingTimes(job_Queue_Head, ((*job_Queue_Head).remainingSeconds) - alarm_Remaining);
+      decreaseAllRemainingTimes(jobQueueHead, ((*jobQueueHead).remainingSeconds) - alarm_Remaining);
     }    
     /* TO DO: FIX addToQueue - IS CAUSING SEG FAULT, try 2 sec, 2 sec, 3 sec*/
-    addToQueue(&job_Queue_Head, (*job_entry));
+    addToQueue(&jobQueueHead, (*job_entry));
     printf("\nQueue:\n");
-    printfJobToExecute(job_Queue_Head);
+    printfJobToExecute(jobQueueHead);
     printf("\n");
-    alarm((*job_Queue_Head).remainingSeconds);
+    alarm((*jobQueueHead).remainingSeconds);
     (*job_counter)++;
   }
 
@@ -146,23 +150,53 @@ void delayed_message_send(int sig)
 {
   char seconds[10];
 
-  if (job_Queue_Head != NULL)
+  if (jobQueueHead != NULL)
   {
     printf("ALARM INTERRUPT\n");
-    decreaseAllRemainingTimes(job_Queue_Head, (*job_Queue_Head).remainingSeconds);
+    decreaseAllRemainingTimes(jobQueueHead, (*jobQueueHead).remainingSeconds);
     
-    while (job_Queue_Head != NULL && (*job_Queue_Head).remainingSeconds <= 0)
+    while (jobQueueHead != NULL && (*jobQueueHead).remainingSeconds <= 0)
     {
-      printf("EXECUTING JOB %d\n", (*job_Queue_Head).job.jobId);
-      sprintf(seconds, "%d", (*job_Queue_Head).job.seconds);
+      printf("EXECUTING JOB %d\n", (*jobQueueHead).job.jobId);
+      sprintf(seconds, "%d", (*jobQueueHead).job.seconds);
       /* Message is created and sent to node 1 (whitch is node 0), with mtype 1 */
-      createMessage(msqid, (*job_Queue_Head).job.jobId, seconds, (*job_Queue_Head).job.exeFile, 1);
-      removeHead(&job_Queue_Head);
+      createMessage(msqid, (*jobQueueHead).job.jobId, seconds, (*jobQueueHead).job.exeFile, 1);
+      removeHead(&jobQueueHead);
     }
 
-    if (job_Queue_Head != NULL)
+    if (jobQueueHead != NULL)
     {
-      alarm((*job_Queue_Head).remainingSeconds);
+      alarm((*jobQueueHead).remainingSeconds);
     }      
   }
+}
+
+// The function needs to receive an 'int', to describe what type of signal it is redefining
+void terminateScheduler(int sig)
+{
+  printf("\n\nShuting down...\n");
+  
+  if (jobQueueHead != NULL)
+  {
+    printf("Jobs that were waiting to start the execution:\n");
+    printfJobToExecute(jobQueueHead);
+    deleteQueue(&jobQueueHead);
+  }
+
+  printf("\n\n");
+  printf("Nodes statistics execution table:\n");
+
+  if (finishedJobTableHead != NULL)
+  {
+    printfJobTable(finishedJobTableHead);
+    deleteJobTable(&finishedJobTableHead, &finishedJobTableTail);
+  }
+  else
+  {
+    printf("No jobs were executed!\n");
+  }
+
+  // Delete the message queue
+  queueDestroy(msqid);
+  exit(0);
 }

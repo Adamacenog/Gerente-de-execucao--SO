@@ -101,10 +101,9 @@ void decreaseAllRemainingTimes(jobQueue *jobHead, int amount2Decrease)
     }
 }
 
-/* TO DO: Finish this function */
-void addToJobTable(finishedJobTable **finishedJobTableHead, job finishedJob)
+void addToJobTable(finishedJobTable **finishedJobTableHead, finishedJobTable **finishedJobTableTail, job finishedJob)
 {
-    finishedJobTable *aux, *aux2;
+    finishedJobTable *aux;
 
     aux = (finishedJobTable *) malloc(sizeof(finishedJobTable));
     if (aux == NULL)
@@ -114,22 +113,46 @@ void addToJobTable(finishedJobTable **finishedJobTableHead, job finishedJob)
     }
 
     aux->job = finishedJob;
-    aux->next = NULL;
+    aux->nextTable = NULL;
 
     if ((*finishedJobTableHead) == NULL)
     {
-        (*finishedJobTableHead) = aux;        
+        (*finishedJobTableHead) = aux; 
+        (*finishedJobTableTail) = aux;       
     }
     else
     {
-       /* aux2 =  *finishedJobTableHead;
-        while (aux2->next != NULL)
-        {
-            aux2 = aux2->next;
-        }
-
-        aux2->next = aux;*/
+       (*finishedJobTableTail)->nextTable = aux;
+       (*finishedJobTableTail) = aux;
     }    
+}
+
+void deleteJobTable(finishedJobTable **finishedJobTableHead, finishedJobTable **finishedJobTableTail)
+{
+    finishedJobTable *aux;
+    while(*finishedJobTableHead != NULL)
+    {
+        aux = (*finishedJobTableHead);
+        (*finishedJobTableHead) = (*finishedJobTableHead)->nextTable;
+        free(aux);
+    }
+
+    (*finishedJobTableTail) = NULL;
+}
+
+void printfJobTable(finishedJobTable *finishedJobTableHead)
+{
+    while(finishedJobTableHead != NULL)
+    {
+        printf("---------------------------\n");
+        printf("JobId: %d\n", finishedJobTableHead->job.jobId);
+        printf("Seconds: %d\n", finishedJobTableHead->job.seconds);
+        printf("StartTime: %ld\n", finishedJobTableHead->job.start_time);
+        printf("EndTime: %ld\n", finishedJobTableHead->job.end_time);
+        printf("ExeFile: %s\n", finishedJobTableHead->job.exeFile);
+        finishedJobTableHead = finishedJobTableHead->nextTable;
+    }
+    printf("---------------------------\n");
 }
 
 void printfJobToExecute(jobQueue *jobHead)

@@ -35,3 +35,4 @@ Guilherme Lopes. - mat. 15/0128215
 
 void runScheduler(int, struct Job *, int *, char *);
 void delayed_message_send(int);
+void terminateScheduler(int);
