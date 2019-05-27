@@ -3,7 +3,7 @@ Propriedade de:
 Alex Nascimento. - mat. 15/0115474
 Andre Garrido Damaceno.- mat. 15/0117531
 Danillo Neves. - mat. 14/0135839
-Guilherme Lopes
+Guilherme Lopes. - mat. 15/0128215
 */
 
 #ifndef _Scheduler_library
@@ -15,10 +15,10 @@ Guilherme Lopes
 int msqid;
 struct JobQueue *jobQueueHead = NULL;
 struct FinishedJobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NULL;
+struct Job *jobEntry, *jobExit;
 
 int main(int argc, char *argv[])
 {
-  struct Job *jobEntry;
   int i, pid[16], busyTable[16], jobCounter, topologyType = -1, nodesSize;
   char *topology, jobIdString[10];
   key_t key = 7869;
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-      runScheduler(msqid, jobEntry, &jobCounter, jobIdString);
+      runScheduler(msqid, &jobCounter, jobIdString);
     }
   }
   else
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-void runScheduler(int msqid, struct Job *jobEntry, int *jobCounter, char *jobIdString)
+void runScheduler(int msqid, int *jobCounter, char *jobIdString)
 {
   int alarmRemaining;
 
@@ -143,6 +143,10 @@ void runScheduler(int msqid, struct Job *jobEntry, int *jobCounter, char *jobIdS
     (*jobCounter)++;
   }
 
+  if (receivedNodeStatistics(msqid, jobExit))
+  {
+    addToJobTable(&finishedJobTableHead, &finishedJobTableTail, *jobExit); 
+  }
 }
 
 // The function needs to receive an 'int', to describe what type of signal it is redefining
@@ -200,5 +204,9 @@ void terminateScheduler(int sig)
 
   // Delete the message queue
   queueDestroy(msqid);
+
+  free(jobEntry);
+  free(jobExit);
+
   exit(0);
 }

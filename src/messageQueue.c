@@ -104,25 +104,26 @@ void createMessage(int msqid, int jobId, char *seconds, char *execFile, long mty
   messageSend(msqid, buf, (strlen(buf.mtext) + 1));
 }
 
-int receivedDelayedJob(int msqid, int job_counter, struct Job *job_entry)
+int receivedDelayedJob(int msqid, int jobCounter, struct Job *jobEntry)
 {
   struct msgbuf bufReceive;
-  char exeFile[50], seconds[10], jobPid[10], pattern[2] = "|";
+  char exeFile[50], seconds[10], jobId[10], pattern[2] = "|";
 
-  /* Receives a msg from queue created by delayedMulti */
+  /* Receives a msg from queue by delayedMulti */
   if (messageReceive(msqid, &bufReceive, 666, 0))
   {
     /* Cuts the string with the pattern to be parsed */
-    copyNremoveByPattern(jobPid, 10, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(jobId, 10, bufReceive.mtext, 500, *pattern);
     copyNremoveByPattern(seconds, 10, bufReceive.mtext, 500, *pattern);
     copyNremoveByPattern(exeFile, 50, bufReceive.mtext, 500, *pattern);
 
     /* Initializes job values */
-    (*job_entry).jobId = job_counter;
-    (*job_entry).seconds = atoi(seconds);
-    strcpy((*job_entry).exeFile, exeFile);
-    (*job_entry).startTime = 0;
-    (*job_entry).endTime = 0;
+    (*jobEntry).nodePid = 0;
+    (*jobEntry).jobId = jobCounter;
+    (*jobEntry).seconds = atoi(seconds);
+    strcpy((*jobEntry).exeFile, exeFile);
+    (*jobEntry).startTime = 0;
+    (*jobEntry).endTime = 0;
   
     return 1;
   }
@@ -154,4 +155,41 @@ void copyNremoveByPattern(char *destination, int sizeOfDest, char *source, int s
   {
     source[i] = source[i + sizeOfDest + 1]; // Plus 1 because of pattern.
   }
+}
+
+int receivedNodeStatistics(int msqid, struct Job *jobExit)
+{
+  struct msgbuf bufReceive;
+  char exeFile[50], seconds[10], nodePid[10], jobId[10], startTimeString[10], endTimeString[10], pattern[2] = "|";
+  time_t startTime, endTime;
+  struct tm strt, endt;
+
+  /* Receives a msg from node zero */
+  if (messageReceive(msqid, &bufReceive, 777, 0))
+  {
+    /* Cuts the string with the pattern to be parsed */
+    copyNremoveByPattern(nodePid, 10, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(jobId, 10, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(seconds, 10, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(startTimeString, 10, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(endTimeString, 10, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(exeFile, 50, bufReceive.mtext, 500, *pattern);
+
+    /* Converts string to time_t */
+    /* TO DO: CONVERT FROM STRING TO TIME_T */
+    //strptime(startTime, "%H:%M:%S", &strt);
+    //strptime(endTime, "%H:%M:%S", &endt);
+
+    /* Set job values */
+    (*jobExit).nodePid = atoi(nodePid);
+    (*jobExit).jobId = atoi(jobId);
+    (*jobExit).seconds = atoi(seconds);
+    (*jobExit).startTime = mktime(&strt);
+    (*jobExit).endTime = mktime(&endt);
+    strcpy((*jobExit).exeFile, exeFile);
+  
+    return 1;
+  }
+
+  return 0;
 }

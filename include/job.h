@@ -21,6 +21,7 @@ Guilherme Lopes. - mat. 15/0128215
 
 typedef struct Job
 {
+  int nodePid;
   int jobId;
   int seconds;
   time_t startTime;
