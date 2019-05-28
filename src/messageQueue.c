@@ -162,7 +162,6 @@ int receivedNodeStatistics(int msqid, struct Job *jobExit)
   struct msgbuf bufReceive;
   char exeFile[50], seconds[10], nodePid[10], jobId[10], startTimeString[10], endTimeString[10], pattern[2] = "|";
   time_t startTime, endTime;
-  struct tm strt, endt;
 
   /* Receives a msg from node zero */
   if (messageReceive(msqid, &bufReceive, 777, 0))
@@ -173,19 +172,14 @@ int receivedNodeStatistics(int msqid, struct Job *jobExit)
     copyNremoveByPattern(seconds, 10, bufReceive.mtext, 500, *pattern);
     copyNremoveByPattern(startTimeString, 10, bufReceive.mtext, 500, *pattern);
     copyNremoveByPattern(endTimeString, 10, bufReceive.mtext, 500, *pattern);
-    copyNremoveByPattern(exeFile, 50, bufReceive.mtext, 500, *pattern);
-
-    /* Converts string to time_t */
-    /* TO DO: CONVERT FROM STRING TO TIME_T */
-    //strptime(startTime, "%H:%M:%S", &strt);
-    //strptime(endTime, "%H:%M:%S", &endt);
+    copyNremoveByPattern(exeFile, 50, bufReceive.mtext, 500, *pattern);    
 
     /* Set job values */
     (*jobExit).nodePid = atoi(nodePid);
     (*jobExit).jobId = atoi(jobId);
     (*jobExit).seconds = atoi(seconds);
-    (*jobExit).startTime = mktime(&strt);
-    (*jobExit).endTime = mktime(&endt);
+    (*jobExit).startTime = atoi(startTimeString);
+    (*jobExit).endTime = atoi(endTimeString);
     strcpy((*jobExit).exeFile, exeFile);
   
     return 1;

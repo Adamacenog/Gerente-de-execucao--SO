@@ -89,8 +89,8 @@ int main(int argc, char *argv[])
           // Checks whether it is processes father (pid != 0) or child (pid == 0)
           if (pid[i] == 0)
           {
-            sprintf(jobIdString, "%d", (i + 1));
-            execl("./gerente_execucao", "gerente_execucao", jobIdString, NULL);
+            sprintf(jobIdString, "%d", i);
+            execl("./gerente_execucao", "gerente_execucao", jobIdString);
             
           }
         }
@@ -134,7 +134,7 @@ void runScheduler(int msqid, int *jobCounter, char *jobIdString)
     {
       decreaseAllRemainingTimes(jobQueueHead, ((*jobQueueHead).remainingSeconds) - alarmRemaining);
     }    
-    /* TO DO: FIX addToQueue - IS CAUSING SEG FAULT, try 2 sec, 2 sec, 3 sec*/
+    
     addToQueue(&jobQueueHead, (*jobEntry));
     printf("\nQueue:\n");
     printfJobToExecute(jobQueueHead);
@@ -163,7 +163,7 @@ void delayedMessageSend(int sig)
     {
       printf("EXECUTING JOB %d\n", (*jobQueueHead).job.jobId);
       sprintf(seconds, "%d", (*jobQueueHead).job.seconds);
-      /* Message is created and sent to node 1 (whitch is node 0), with mtype 1 */
+      /* Message is created and sent to node 0 (using mtype 1) */
       createMessage(msqid, (*jobQueueHead).job.jobId, seconds, (*jobQueueHead).job.exeFile, 1);
       removeHead(&jobQueueHead);
     }
