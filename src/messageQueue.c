@@ -83,17 +83,13 @@ void queueDestroy(int msqid)
 }
 
 // isNode is used to differentiate from a node.
-void createMessage(int msqid, struct Job *jobEntry, long mtype, int isNode)
+void createMessage(int msqid, struct Job *jobEntry, long mtype)
 {
   char auxString[10];
   struct msgbuf buf;
   int i;
 
-  if (isNode == 0)
-  {
-    memset(buf.mtext,0,MSGSZ);
-  }
-
+  memset(buf.mtext,0,MSGSZ);
   memset(auxString,0,10);
 
   sprintf(auxString, "%d", (*jobEntry).nodeId);
@@ -172,39 +168,49 @@ void copyNremoveByPattern(char *destination, int sizeOfDest, char *source, int s
 int receiveMessage(int msqid, struct Job *jobExit, long mtype)
 {
   struct msgbuf bufReceive;
-  char auxString[50], pattern[2] = "|";
-  time_t startTime, endTime;
 
   /* Receives a msg with mtype # */
   if (messageReceive(msqid, &bufReceive, mtype, 0))
   {
-    /* Cuts the string with the pattern to be parsed and Sets the job values */
+    convertBuf2Job(bufReceive.mtext, jobExit);  
+    return 1;
+  }
+
+  return 0;
+}
+
+void convertBuf2Job(char *bufReceive, struct Job *jobExit)
+{
+  char auxString[50], pattern[2] = "|";
+  time_t startTime, endTime;
+
+  /* Cuts the string with the pattern to be parsed and Sets the job values */
     memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     (*jobExit).nodeId = atoi(auxString);
 
     memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     (*jobExit).nodePid = atoi(auxString);
 
     memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     (*jobExit).delayedPid = atoi(auxString);
 
     memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     (*jobExit).jobPid = atoi(auxString);
 
     memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     (*jobExit).jobOrder = atoi(auxString);
 
     memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     (*jobExit).seconds = atoi(auxString);
 
     memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     
     if (sscanf(auxString, "%ld", &(*jobExit).startTime) == EOF)
     {
@@ -214,7 +220,7 @@ int receiveMessage(int msqid, struct Job *jobExit, long mtype)
     }
 
     memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     if (sscanf(auxString, "%ld", &(*jobExit).endTime) == EOF)
     {
       printf("Error while converting the message endtime.\n");
@@ -223,11 +229,6 @@ int receiveMessage(int msqid, struct Job *jobExit, long mtype)
     }
 
     memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     strcpy((*jobExit).exeFile, auxString);
-  
-    return 1;
-  }
-
-  return 0;
 }

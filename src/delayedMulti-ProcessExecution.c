@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     strcpy(job.exeFile, argv[2]);
 
     // Sends the program exec file and delayed execution time to the scheduler (using the queue)
-    createMessage(msqid, &job, mtype, 0);
+    createMessage(msqid, &job, mtype);
   }
   else
   {

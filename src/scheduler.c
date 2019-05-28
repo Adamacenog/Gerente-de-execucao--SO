@@ -165,7 +165,7 @@ void delayedMessageSend(int sig)
       printf("EXECUTING JOB %d\n", (*jobQueueHead).job.jobOrder);
       sprintf(seconds, "%d", (*jobQueueHead).job.seconds);
       /* Message is created and sent to node 0 (using mtype 1) */
-      createMessage(msqid, &((*jobQueueHead).job), 1, 0);
+      createMessage(msqid, &((*jobQueueHead).job), 1);
       removeHead(&jobQueueHead);
     }
 

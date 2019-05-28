@@ -43,6 +43,7 @@ int queueCreator(key_t);
 int messageReceive(int, struct msgbuf *, long, int);
 void messageSend(int, struct msgbuf, size_t);
 void queueDestroy(int msqid);
-void createMessage(int, struct Job *, long, int);
+void createMessage(int, struct Job *, long);
 void copyNremoveByPattern(char *, int, char *, int, char);
 int receiveMessage(int, struct Job *, long);
+void convertBuf2Job(char *, struct Job *);

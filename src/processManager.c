@@ -16,7 +16,7 @@ int main(int argc, char const *argv[])
   key_t key = 7869; 
   struct msgbuf pmBuffer; 
   int processManagerId, msqid, topologyId; 
-  struct Job *job;
+  struct NodeJob *nodeJob;
   char execFile[10], *seconds, pattern[2] = "|"; 
     
   if(argc == 3) 
@@ -32,10 +32,11 @@ int main(int argc, char const *argv[])
 
       while (1)
       {
-        if (receiveMessage(msqid, job, (processManagerId + 1)))
+        if (receiveNodeMessage(msqid, nodeJob, (processManagerId + 1)))
         {
-            // Check message, if new, put on job queue and flood
-            // if repeated, discart.
+            // Check message (nodeJob), if new (checking the nodeJob->job.jobOrder, using function
+            // 'isNewMessage'), put on job queue (TO DO) and flood
+            // if message is repeated, discart it completely (don't flood!!).
 
             // Each node can take a new job after the previous job has finished the execution or
             // if the node is free (not executing any job)            
@@ -109,11 +110,11 @@ int isInFloodTable(floodTable *floodTableHead, int uniqueId, floodTable **found)
   return 0;
 }
 
-void addToFloodTableUniqueId(floodTable **floodTableHead, int uniqueId)
+void addToFloodTableUniqueId(floodTable **floodTableHead, struct NodeJob *nodeJob)
 {
   floodTable *aux, *aux2;
 
-  if (isInFloodTable((*floodTableHead), uniqueId, &aux))
+  if (isInFloodTable((*floodTableHead), nodeJob->job.jobOrder, &aux))
   {
     aux->wasExecuted = 1;
   }
@@ -126,7 +127,7 @@ void addToFloodTableUniqueId(floodTable **floodTableHead, int uniqueId)
       exit(1);
     }
 
-    aux->uniqueId = uniqueId;
+    aux->uniqueId = nodeJob->job.jobOrder;
     aux->wasExecuted = 1;
     aux->next = NULL;
 
@@ -146,13 +147,13 @@ void addToFloodTableUniqueId(floodTable **floodTableHead, int uniqueId)
   }  
 }
 
-void addToFloodTableNodesResponse(floodTable **floodTableHead, int nodeNumber, int uniqueId)
+void addToFloodTableNodesResponse(floodTable **floodTableHead, struct NodeJob *nodeJob)
 {
   floodTable *aux, *aux2;
 
-  if (isInFloodTable((*floodTableHead), uniqueId, &aux))
+  if (isInFloodTable((*floodTableHead), nodeJob->job.jobOrder, &aux))
   {
-    aux->nodesResponse[nodeNumber] = 1;
+    aux->nodesResponse[nodeJob->source] = 1;
   }
   else
   {
@@ -163,9 +164,9 @@ void addToFloodTableNodesResponse(floodTable **floodTableHead, int nodeNumber, i
       exit(1);
     }
 
-    aux->uniqueId = uniqueId;
+    aux->uniqueId = nodeJob->job.jobOrder;
     aux->wasExecuted = 0;
-    aux->nodesResponse[nodeNumber] = 1;
+    aux->nodesResponse[nodeJob->source] = 1;
     aux->next = NULL;
 
     if ((*floodTableHead) == NULL)
@@ -194,4 +195,72 @@ void deleteFloodTable(floodTable **floodTableHead)
     (*floodTableHead) = (*floodTableHead)->next;
     free(aux);
   }
+}
+
+int isMessageNew(floodTable *floodTableHead, struct NodeJob *nodeJob)
+{
+  floodTable *found = NULL;
+  if (isInFloodTable(floodTableHead, nodeJob->job.jobOrder, &found))
+  {
+    if (found->wasExecuted == 0)
+      return 1;
+    else
+      return 0;
+  }
+
+  return 1;
+}
+
+int isResponse(floodTable *floodTableHead, struct NodeJob *nodeJob)
+{
+  floodTable *found = NULL;
+  if (isInFloodTable(floodTableHead, nodeJob->job.jobOrder, &found))
+  {
+    if (found->nodesResponse[nodeJob->source] == 0)
+      return 1;
+    else
+      return 0;
+  }
+
+  return 1;
+}
+
+int receiveNodeMessage(int msqid, struct NodeJob *nodeJob, int nodeId)
+{
+  struct Job *job;
+  struct msgbuf bufReceive;
+  char auxString[50], pattern[2] = "|";
+
+  /* Receives a msg with mtype # */
+  if (messageReceive(msqid, &bufReceive, nodeId, 0))
+  {
+    /* Cuts the string with the pattern to be parsed and Sets the job values */
+    memset(auxString,0,50);
+    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    nodeJob->destination = atoi(auxString);
+
+    memset(auxString,0,50);
+    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    nodeJob->source = atoi(auxString);
+
+    convertBuf2Job(bufReceive.mtext, job);  
+
+    nodeJob->job.nodeId = job->nodeId;
+    nodeJob->job.delayedPid = job->delayedPid;
+    nodeJob->job.jobPid = job->jobPid;
+    nodeJob->job.jobOrder = job->jobOrder;
+    nodeJob->job.seconds = job->seconds;
+    nodeJob->job.startTime = job->startTime;
+    nodeJob->job.endTime = job->endTime;
+    strcpy(nodeJob->job.exeFile, job->exeFile);
+
+    return 1;
+  }
+
+  return 0;
+}
+
+void sendNodeMessage(int msqid, struct NodeJob *nodeJob, int topology)
+{
+  
 }

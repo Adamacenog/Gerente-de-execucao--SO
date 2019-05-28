@@ -36,9 +36,20 @@ typedef struct FloodTable
   struct FloodTable *next;
 } floodTable;
 
+typedef struct NodeJob
+{
+  int destination;
+  int source;
+  struct Job job;
+} nodeJob;
+
 void endExecution(int);
 void convertToBinary(char *, int);
-void addToFloodTableUniqueId(floodTable **, int);              // Receives the floodTable head and uniqueId
-void addToFloodTableNodesResponse(floodTable **, int, int);    // Receives the floodTable head, node # and uniqueId
+void addToFloodTableUniqueId(floodTable **, struct NodeJob *);              // Receives the floodTable head and uniqueId
+void addToFloodTableNodesResponse(floodTable **, struct NodeJob *);    // Receives the floodTable head, node # and uniqueId
 int isInFloodTable(floodTable *, int, floodTable **);
 void deleteFloodTable(floodTable **);
+void sendNodeMessage(int, struct NodeJob *, int);
+int receiveNodeMessage(int, struct NodeJob *, int);
+int isMessageNew(floodTable *, struct NodeJob *);
+int isResponse(floodTable *, struct NodeJob *);
