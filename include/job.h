@@ -21,8 +21,11 @@ Guilherme Lopes. - mat. 15/0128215
 
 typedef struct Job
 {
-  int nodePid;
-  int jobId;
+  int nodeId;       // Unique nodeId
+  int nodePid;      // pid of the processManager node
+  int delayedPid;   // pid of the delayedMulti-ProcessExecution that sent the job to be executed
+  int jobPid;       // pid of the job that was executed by the processManager
+  int jobOrder;     // order that delayedMulti-ProcessExecution sent the job
   int seconds;
   time_t startTime;
   time_t endTime;

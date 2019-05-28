@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
           if (pid[i] == 0)
           {
             sprintf(jobIdString, "%d", i);
-            execl("./gerente_execucao", "gerente_execucao", jobIdString);
+            execl("./gerente_execucao", "gerente_execucao", jobIdString, NULL);
             
           }
         }
@@ -124,8 +124,9 @@ void runScheduler(int msqid, int *jobCounter, char *jobIdString)
 {
   int alarmRemaining;
 
-  if (receivedDelayedJob(msqid, (*jobCounter), jobEntry))
+  if (receiveMessage(msqid, jobEntry, 666))
   {
+    (*jobEntry).jobOrder = *jobCounter;
     printf("scheduler-MENSSAGE: %s\n", (*jobEntry).exeFile);
     printf("scheduler-SECONDS: %d\n", (*jobEntry).seconds);
     alarmRemaining = alarm(0);
@@ -143,7 +144,7 @@ void runScheduler(int msqid, int *jobCounter, char *jobIdString)
     (*jobCounter)++;
   }
 
-  if (receivedNodeStatistics(msqid, jobExit))
+  if (receiveMessage(msqid, jobExit, 777))
   {
     addToJobTable(&finishedJobTableHead, &finishedJobTableTail, *jobExit); 
   }
@@ -161,10 +162,10 @@ void delayedMessageSend(int sig)
     
     while (jobQueueHead != NULL && (*jobQueueHead).remainingSeconds <= 0)
     {
-      printf("EXECUTING JOB %d\n", (*jobQueueHead).job.jobId);
+      printf("EXECUTING JOB %d\n", (*jobQueueHead).job.jobOrder);
       sprintf(seconds, "%d", (*jobQueueHead).job.seconds);
       /* Message is created and sent to node 0 (using mtype 1) */
-      createMessage(msqid, (*jobQueueHead).job.jobId, seconds, (*jobQueueHead).job.exeFile, 1);
+      createMessage(msqid, &((*jobQueueHead).job), 1, 0);
       removeHead(&jobQueueHead);
     }
 
@@ -178,7 +179,7 @@ void delayedMessageSend(int sig)
 // The function needs to receive an 'int', to describe what type of signal it is redefining
 void terminateScheduler(int sig)
 {
-  printf("\n\nShuting down...\n");
+  printf("\n\nShutting down...\n");
 
   /* TO DO: 'KILL' all nodes, call 'wait' for all nodes... */
   

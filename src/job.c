@@ -24,7 +24,7 @@ void addToQueue(jobQueue **jobHead, job job)
     }
     
     aux->remainingSeconds = job.seconds;
-    aux->job.jobId = job.jobId;
+    aux->job.jobOrder = job.jobOrder;
     aux->job.seconds = job.seconds;
     aux->job.startTime = job.startTime;
     aux->job.endTime = job.endTime;
@@ -145,7 +145,7 @@ void printfJobTable(finishedJobTable *finishedJobTableHead)
     while(finishedJobTableHead != NULL)
     {
         printf("---------------------------\n");
-        printf("JobId: %d\n", finishedJobTableHead->job.jobId);
+        printf("jobOrder: %d\n", finishedJobTableHead->job.jobOrder);
         printf("Seconds: %d\n", finishedJobTableHead->job.seconds);
         printf("StartTime: %ld\n", finishedJobTableHead->job.startTime);
         printf("EndTime: %ld\n", finishedJobTableHead->job.endTime);
@@ -161,7 +161,7 @@ void printfJobToExecute(jobQueue *jobHead)
     {
         printf("---------------------------\n");
         printf("Remaining seconds: %d\n", jobHead->remainingSeconds);
-        printf("JobId: %d\n", jobHead->job.jobId);
+        printf("jobOrder: %d\n", jobHead->job.jobOrder);
         printf("Seconds: %d\n", jobHead->job.seconds);
         printf("StartTime: %ld\n", jobHead->job.startTime);
         printf("EndTime: %ld\n", jobHead->job.endTime);

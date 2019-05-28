@@ -22,3 +22,8 @@ Guilherme Lopes. - mat. 15/0128215
   #define _Queue_library
     #include "messageQueue.h"
 #endif
+
+#ifndef _Job_Queue
+  #define _Job_Queue
+    #include "job.h"
+#endif

@@ -17,14 +17,26 @@ int main(int argc, char *argv[])
   // TYPE 666 IS USED TO COMUNICATE WITH SCHEDULER.
   long mtype = 666;
   key_t key = 7869;
+  struct Job job;
 
   if (argc == 3)
   {
     // Creates the queue that is used to communicate with scheduler
     msqid = queueCreator(key);
 
+    // Sets the job parameters
+    job.nodeId = 0;
+    job.nodePid = 0;
+    job.delayedPid = getpid();
+    job.jobPid = 0;       // pid of the job that was executed by the processManager
+    job.jobOrder = 0;     // order that delayedMulti-ProcessExecution sent the job
+    job.seconds = atoi(argv[1]);
+    job.startTime = 0;
+    job.endTime = 0;
+    strcpy(job.exeFile, argv[2]);
+
     // Sends the program exec file and delayed execution time to the scheduler (using the queue)
-    createMessage(msqid, getpid(), argv[1], argv[2], mtype);
+    createMessage(msqid, &job, mtype, 0);
   }
   else
   {

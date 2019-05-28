@@ -49,6 +49,8 @@ int main(int argc, char const *argv[]) {
                             // (trying to communicate to node 0).
         int UniqueID = ####;
 
+        // message: destination, source, message (jobId...)
+
         */ 
 
     }  

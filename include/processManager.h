@@ -24,4 +24,4 @@ Guilherme Lopes. - mat. 15/0128215
 #endif
 
 void endExecution(int);
-void convertToBinary(char *, int)
+void convertToBinary(char *, int);
