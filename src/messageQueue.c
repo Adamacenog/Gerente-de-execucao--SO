@@ -83,6 +83,10 @@ void queueDestroy(int msqid)
 }
 
 // isNode is used to differentiate from a node.
+/*
+createMessage mounts the message to be send to a specific
+message queue
+*/
 void createMessage(int msqid, struct Job *jobEntry, long mtype)
 {
   char auxString[10];

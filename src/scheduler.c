@@ -11,7 +11,7 @@ Guilherme Lopes. - mat. 15/0128215
     #include "scheduler.h"
 #endif
 
-// Those variables need to be global, so that the signal redefinition can use them.
+// These variables need to be global, so that the signal redefinition can use them.
 int msqid;
 struct JobQueue *jobQueueHead = NULL;
 struct FinishedJobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NULL;
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-      runScheduler(msqid, &jobCounter, jobIdString);
+      runScheduler(msqid, &jobCounter);
     }
   }
   else
@@ -120,7 +120,8 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-void runScheduler(int msqid, int *jobCounter, char *jobIdString)
+
+void runScheduler(int msqid, int *jobCounter)
 {
   int alarmRemaining;
 

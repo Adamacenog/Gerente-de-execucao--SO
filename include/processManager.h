@@ -31,7 +31,7 @@ Guilherme Lopes. - mat. 15/0128215
 typedef struct FloodTable
 {
   int wasExecuted;    // is 0 when uniqueId was filled by a nodes response, 1 when uniqueId was filled by a job execution
-  int uniqueId;
+  int uniqueId;       // uniqueId is the ID for each Job
   int nodesResponse[16];
   struct FloodTable *next;
 } floodTable;

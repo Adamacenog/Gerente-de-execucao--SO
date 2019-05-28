@@ -75,6 +75,7 @@ void endExecution(int sig)
 
 }
 
+/* convertToBinary function converts a string to binary */
 void convertToBinary(char *dest, int source)
 {
   int i, k;
@@ -91,6 +92,12 @@ void convertToBinary(char *dest, int source)
       strcat(dest, "0");
   }
 }
+
+/*  
+    isInFloodTable runs over the flood table of a specific process manager
+    checking if the message had already been sent to it.
+    If the message had already been sent, it ignores the message.
+*/
 
 int isInFloodTable(floodTable *floodTableHead, int uniqueId, floodTable **found)
 {
@@ -109,6 +116,12 @@ int isInFloodTable(floodTable *floodTableHead, int uniqueId, floodTable **found)
   (*found) = NULL;
   return 0;
 }
+
+/* 
+  addToFloodTableUniqueId function verifies if the node had already received the message,
+  otherwise it takes job unique id and saves in the floodTable.
+
+*/
 
 void addToFloodTableUniqueId(floodTable **floodTableHead, struct NodeJob *nodeJob)
 {
