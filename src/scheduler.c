@@ -20,7 +20,7 @@ struct Job *jobEntry, *jobExit;
 int main(int argc, char *argv[])
 {
   int i, pid[16], busyTable[16], jobCounter, topologyType = -1, nodesSize;
-  char *topology, jobIdString[10];
+  char *topology, jobIdString[10], topologyString[10];
   key_t key = 7869;
 
   signal(SIGALRM, delayedMessageSend);
@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
           if (pid[i] == 0)
           {
             sprintf(jobIdString, "%d", i);
-            execl("./gerente_execucao", "gerente_execucao", jobIdString, NULL);
-            
+            sprintf(topologyString, "%d", topologyType);
+            execl("./gerente_execucao", "gerente_execucao", jobIdString, topologyString, NULL);            
           }
         }
       }

@@ -13,7 +13,7 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 _DEPS2 = scheduler.h messageQueue.h job.h
 DEPS2 = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_DEPS3 = processManager.h messageQueue.h
+_DEPS3 = processManager.h messageQueue.h job.h
 DEPS2 = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 _OBJ = delayedMulti-ProcessExecution.o messageQueue.o
@@ -22,7 +22,7 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 _OBJ2 = scheduler.o messageQueue.o job.o
 OBJ2 = $(patsubst %,$(ODIR)/%,$(_OBJ2))
 
-_OBJ3 = processManager.o messageQueue.o
+_OBJ3 = processManager.o messageQueue.o job.o
 OBJ3 = $(patsubst %,$(ODIR)/%,$(_OBJ3))
 
 $(ODIR)/%.o: %.c $(DEPS)
