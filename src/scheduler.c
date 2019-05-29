@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
       msqid = queueCreator(key);
 
       /* Creates N process that will execute the process manager logic */
-      for (i = 0; i < 1; i++)
+      for (i = 0; i < nodesSize; i++)
       {
         busyTable[i] = 0;
 

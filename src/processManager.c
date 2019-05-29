@@ -14,110 +14,88 @@ Guilherme Lopes. - mat. 15/0128215
 int main(int argc, char const *argv[]) 
 {  
   key_t key = 7869; 
-  struct msgbuf buf; 
   int processManagerId, msqid, topologyId; 
   struct NodeJob *nodeJob;
   struct FloodTable *floodTable;
   int isExecutingJob = 0;
-  char auxString[10];
     
   if(argc == 3) 
   { 
-      /* Ends if it receives a SIGTERM */
-      signal(SIGTERM, endExecution); 
-      /* Receive the node id through args  */
-      processManagerId = atoi(argv[1]);
-      topologyId =  atoi(argv[2]);
-      printf("PROCESS MANAGER ID: %d TOPOLOGY ID: %d\n", processManagerId, topologyId);
-  
-      msqid = queueCreator(key); 
+    /* Ends if it receives a SIGTERM */
+    signal(SIGTERM, endExecution); 
+    /* Receive the node id through args  */
+    processManagerId = atoi(argv[1]);
+    topologyId =  atoi(argv[2]);
+    printf("PROCESS MANAGER ID: %d TOPOLOGY ID: %d\n", processManagerId, topologyId);
 
-      eraseFloodTable(floodTable);
-      //eraseNodeJob(nodeJob);
+    msqid = queueCreator(key); 
 
-      while (1)
+    eraseFloodTable(floodTable);
+
+    nodeJob = (struct NodeJob *)malloc(sizeof(struct NodeJob));
+
+    if (nodeJob == NULL)
+    {
+      printf("Error on malloc.");
+      exit(1);
+    }
+
+    while (1)
+    {
+      if (receiveNodeMessage(msqid, nodeJob, (processManagerId + 1)))
       {
-        if (receiveNodeMessage(msqid, nodeJob, (processManagerId + 1)))
+        if (nodeJob->destination == -1 || nodeJob->destination == processManagerId)
         {
-          if (nodeJob->destination == -1 || nodeJob->destination == processManagerId)
+          if (isMessageNew(floodTable, nodeJob))
           {
-            if (isMessageNew(floodTable, nodeJob))
-            {
-              printf("Node: %d is Executing!\n", processManagerId);
-              isExecutingJob = 1;
+            printf("Node: %d is Executing!\n", processManagerId);
+            isExecutingJob = 1;
 
-              /* TO DO: Execute msg and set starttime, jobpid... */
-              
-              if (nodeJob->destination == -1)
-              {
-                /* TO DO: Flood message */
-              }
-            }
-            else
+            /* TO DO: Execute msg and set starttime, jobpid... */
+            
+            if (nodeJob->destination == -1)
             {
-              if (processManagerId == 0)
-              {
-                /* checks if it is a response from a node */
-                if (isResponse(floodTable, nodeJob))
-                {
-                  /* Send response to scheduler (mtype 777) */
-                }
-              } 
+              /* TO DO: Flood message */
             }
           }
           else
           {
-            if (isResponse(floodTable, nodeJob))
+            if (processManagerId == 0)
             {
-              /* TO DO: Flood message */
-            }
-          }          
-            // Check message (nodeJob), if new (checking the nodeJob->job.jobOrder, using function
-            // 'isNewMessage'), put on job queue (TO DO) and flood
-            // if message is repeated, discart it completely (don't flood!!).
-
-            // Each node can take a new job after the previous job has finished the execution or
-            // if the node is free (not executing any job)            
-        }
-
-        if (isExecutingJob)
-        {
-          /* Check if job has finished, with nonblocking wait function */
-          /* if it has finished, set statistics and send it to node 0 */
-        }
-        
-        if (processManagerId == 0)
-        {
-          /* Checks if threre are any new message from scheduler (mtype = 555) */
-          if (receiveMessage(msqid, &((*nodeJob).job), 555))
-          {
-            printf("Received from scheduler!!\n");
-            /* Node 0 receives the message, and converts it to the nodes message 'language' */
-            nodeJob->source = 0;
-            nodeJob->destination = -1;
-            memset(buf.mtext,0,MSGSZ);
-            memset(auxString,0,10);
-
-            sprintf(auxString, "%d", nodeJob->destination);
-            strcat(buf.mtext, auxString);
-            strcat(buf.mtext, "|");
-            memset(auxString,0,10);
-
-            sprintf(auxString, "%d", nodeJob->source);
-            strcat(buf.mtext, auxString);
-            strcat(buf.mtext, "|");
-          
-            convertJob2Buf(&nodeJob->job, buf.mtext);
-
-            printf("JobOrder: %d\n", nodeJob->job.jobOrder);
-
-            /* Sends the converted message to node 0 */
-            buf.mtype = 1;
-
-            messageSend(msqid, buf, (strlen(buf.mtext) + 1));
+              /* checks if it is a response from a node */
+              if (isResponse(floodTable, nodeJob))
+              {
+                /* Send response to scheduler (mtype 777) */
+              }
+            } 
           }
         }
+        else
+        {
+          if (isResponse(floodTable, nodeJob))
+          {
+            /* TO DO: Flood message */
+          }
+        }          
+          // Check message (nodeJob), if new (checking the nodeJob->job.jobOrder, using function
+          // 'isNewMessage'), put on job queue (TO DO) and flood
+          // if message is repeated, discart it completely (don't flood!!).
+
+          // Each node can take a new job after the previous job has finished the execution or
+          // if the node is free (not executing any job)            
       }
+
+      if (isExecutingJob)
+      {
+        /* Check if job has finished, with nonblocking wait function */
+        /* if it has finished, set statistics and send it to node 0 */
+      }
+      
+      if (processManagerId == 0)
+      {
+        getSchedulerMsg(msqid);
+      }
+    }
 
       /* Idea: convert processManagerId to binary, then check which nodes
       are its neibourghs. Flood the message to them, adding to your node list the
@@ -240,18 +218,39 @@ void eraseFloodTable(floodTable *floodTable)
     floodTable->nodesResponse[i] = 0;
 }
 
-void eraseNodeJob(struct NodeJob *nodeJob)
+void getSchedulerMsg(int msqid)
 {
-  nodeJob->destination = -1;
-  nodeJob->source = -1;
-  nodeJob->job.jobOrder = 0;
-  strcpy(nodeJob->job.exeFile, "");
-  nodeJob->job.delayedPid = 0;
-  nodeJob->job.endTime = 0;
-  nodeJob->job.jobPid = 0;
-  nodeJob->job.nodeId = 0;
-  nodeJob->job.seconds = 0;
-  nodeJob->job.startTime = 0;
+  struct msgbuf buf; 
+  struct Job job;
+  char auxString[10];
+
+  /* Checks if threre are any new message from scheduler (mtype = 555) */
+  if (receiveMessage(msqid, &job, 555))
+  {
+    printf("Received from scheduler!!\n");
+    /* Node 0 receives the message, and converts it to the nodes message 'language' */
+   
+    memset(buf.mtext,0,MSGSZ);
+    memset(auxString,0,10);
+
+    /* sets destination */
+    sprintf(auxString, "%d", -1);
+    strcat(buf.mtext, auxString);
+    strcat(buf.mtext, "|");
+    memset(auxString,0,10);
+
+    /* sets source */
+    sprintf(auxString, "%d", 0);
+    strcat(buf.mtext, auxString);
+    strcat(buf.mtext, "|");
+  
+    convertJob2Buf(&job, buf.mtext);
+
+    /* Sends the converted message to node 0 */
+    buf.mtype = 1;
+
+    messageSend(msqid, buf, (strlen(buf.mtext) + 1));
+  }
 }
 
 void floodNodeMessage(int msqid, struct NodeJob *nodeJob, int topology)

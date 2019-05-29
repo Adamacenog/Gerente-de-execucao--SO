@@ -49,4 +49,4 @@ int receiveNodeMessage(int, struct NodeJob *, int);
 int isMessageNew(floodTable *, struct NodeJob *);
 int isResponse(floodTable *, struct NodeJob *);
 void eraseFloodTable(floodTable *);
-void eraseNodeJob(struct NodeJob *);
+void getSchedulerMsg(int);
