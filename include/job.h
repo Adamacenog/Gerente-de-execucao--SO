@@ -32,11 +32,11 @@ typedef struct Job
   char exeFile[50];
 } job;
 
-typedef struct FinishedJobTable
+typedef struct JobTable
 {
   struct Job job;
-  struct FinishedJobTable *nextTable;
-} finishedJobTable;
+  struct JobTable *nextTable;
+} jobTable;
 
 typedef struct JobQueue
 {
@@ -49,7 +49,8 @@ void addToQueue(jobQueue **, job);
 void removeHead(jobQueue **);
 void deleteQueue(jobQueue **);
 void decreaseAllRemainingTimes(jobQueue *, int);
-void addToJobTable(finishedJobTable **, finishedJobTable **, job);
+void addToJobTable(jobTable **, jobTable **, job);
 void printfJobToExecute(jobQueue *);
-void printfJobTable(finishedJobTable *);
-void deleteJobTable(finishedJobTable **, finishedJobTable **);
+void printfJobTable(jobTable *);
+void deleteJobTable(jobTable **, jobTable **);
+void removeJobHead(jobTable **);

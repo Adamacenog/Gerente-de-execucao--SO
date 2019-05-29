@@ -14,12 +14,12 @@ Guilherme Lopes. - mat. 15/0128215
 // These variables need to be global, so that the signal redefinition can use them.
 int msqid;
 struct JobQueue *jobQueueHead = NULL;
-struct FinishedJobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NULL;
+struct JobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NULL, *job2ExecuteHead = NULL, *job2ExecuteTail = NULL;
 struct Job *jobEntry, *jobExit;
 
 int main(int argc, char *argv[])
 {
-  int i, pid[16], busyTable[16], jobCounter, topologyType = -1, nodesSize;
+  int i, pid[16], busyTable[16], jobCounter, topologyType = -1, nodesSize, busyNodes = 0;
   char *topology, jobIdString[10], topologyString[10];
   key_t key = 7869;
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-      runScheduler(msqid, &jobCounter);
+      runScheduler(msqid, &jobCounter, &busyNodes);
     }
   }
   else
@@ -121,10 +121,11 @@ int main(int argc, char *argv[])
 }
 
 
-void runScheduler(int msqid, int *jobCounter)
+void runScheduler(int msqid, int *jobCounter, int *busyNodes)
 {
   int alarmRemaining;
 
+  /* Checks if there are any new jobs to be delayed/executed - sent by delayedMulti-ProcessExecution */
   if (receiveMessage(msqid, jobEntry, 666))
   {
     (*jobEntry).jobOrder = *jobCounter;
@@ -141,21 +142,47 @@ void runScheduler(int msqid, int *jobCounter)
     printf("\nQueue:\n");
     printfJobToExecute(jobQueueHead);
     printf("\n");
-    alarm((*jobQueueHead).remainingSeconds);
+
+    /* handle the jobs that have remaining seconds == 0  or less, adding them to the execution queue */
+    while (jobQueueHead != NULL && (*jobQueueHead).remainingSeconds <= 0)
+    {
+      /* Adds the job that has been delayed to the execution queue */
+      addToJobTable(&job2ExecuteHead, &job2ExecuteTail, (*jobQueueHead).job);
+      removeHead(&jobQueueHead);
+    }
+
+    if (jobQueueHead != NULL)
+    {
+      alarm((*jobQueueHead).remainingSeconds);
+    }
+
     (*jobCounter)++;
   }
 
+  /* Checks messages from node 0 */
   if (receiveMessage(msqid, jobExit, 777))
   {
     addToJobTable(&finishedJobTableHead, &finishedJobTableTail, *jobExit); 
+    *busyNodes -= 1; // Each new message from node 0 represents a node that is free
+  }
+
+  if (*busyNodes == 0)
+  {
+    if (job2ExecuteHead != NULL)
+    {
+      *busyNodes = 16;
+      printf("EXECUTING JOB %d\n", (*job2ExecuteHead).job.jobOrder);
+
+      /* Message is created and sent to node 0 (using mtype 1) */
+      createMessage(msqid, &((*job2ExecuteHead).job), 1);
+      removeJobHead(&job2ExecuteHead);
+    }
   }
 }
 
 // The function needs to receive an 'int', to describe what type of signal it is redefining
 void delayedMessageSend(int sig) 
 {
-  char seconds[10];
-
   if (jobQueueHead != NULL)
   {
     printf("ALARM INTERRUPT\n");
@@ -163,10 +190,8 @@ void delayedMessageSend(int sig)
     
     while (jobQueueHead != NULL && (*jobQueueHead).remainingSeconds <= 0)
     {
-      printf("EXECUTING JOB %d\n", (*jobQueueHead).job.jobOrder);
-      sprintf(seconds, "%d", (*jobQueueHead).job.seconds);
-      /* Message is created and sent to node 0 (using mtype 1) */
-      createMessage(msqid, &((*jobQueueHead).job), 1);
+      /* Adds the job that has been delayed to the execution queue */
+      addToJobTable(&job2ExecuteHead, &job2ExecuteTail, (*jobQueueHead).job);
       removeHead(&jobQueueHead);
     }
 
@@ -189,6 +214,14 @@ void terminateScheduler(int sig)
     printf("Jobs that were waiting to start the execution:\n");
     printfJobToExecute(jobQueueHead);
     deleteQueue(&jobQueueHead);
+  }
+
+  if (job2ExecuteHead != NULL)
+  {
+    printf("\n\n");
+    printf("Jobs that were ready to execute, waiting for the nodes to be free:\n");
+    printfJobTable(job2ExecuteHead);
+    deleteJobTable(&job2ExecuteHead, &job2ExecuteTail);
   }
 
   printf("\n\n");

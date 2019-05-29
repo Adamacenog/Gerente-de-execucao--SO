@@ -101,11 +101,11 @@ void decreaseAllRemainingTimes(jobQueue *jobHead, int amount2Decrease)
     }
 }
 
-void addToJobTable(finishedJobTable **finishedJobTableHead, finishedJobTable **finishedJobTableTail, job finishedJob)
+void addToJobTable(jobTable **jobTableHead, jobTable **jobTableTail, job finishedJob)
 {
-    finishedJobTable *aux;
+    jobTable *aux;
 
-    aux = (finishedJobTable *) malloc(sizeof(finishedJobTable));
+    aux = (jobTable *) malloc(sizeof(jobTable));
     if (aux == NULL)
     {
         printf("Error on malloc.");
@@ -115,42 +115,42 @@ void addToJobTable(finishedJobTable **finishedJobTableHead, finishedJobTable **f
     aux->job = finishedJob;
     aux->nextTable = NULL;
 
-    if ((*finishedJobTableHead) == NULL)
+    if ((*jobTableHead) == NULL)
     {
-        (*finishedJobTableHead) = aux; 
-        (*finishedJobTableTail) = aux;       
+        (*jobTableHead) = aux; 
+        (*jobTableTail) = aux;       
     }
     else
     {
-       (*finishedJobTableTail)->nextTable = aux;
-       (*finishedJobTableTail) = aux;
+       (*jobTableTail)->nextTable = aux;
+       (*jobTableTail) = aux;
     }    
 }
 
-void deleteJobTable(finishedJobTable **finishedJobTableHead, finishedJobTable **finishedJobTableTail)
+void deleteJobTable(jobTable **jobTableHead, jobTable **jobTableTail)
 {
-    finishedJobTable *aux;
-    while(*finishedJobTableHead != NULL)
+    jobTable *aux;
+    while(*jobTableHead != NULL)
     {
-        aux = (*finishedJobTableHead);
-        (*finishedJobTableHead) = (*finishedJobTableHead)->nextTable;
+        aux = (*jobTableHead);
+        (*jobTableHead) = (*jobTableHead)->nextTable;
         free(aux);
     }
 
-    (*finishedJobTableTail) = NULL;
+    (*jobTableTail) = NULL;
 }
 
-void printfJobTable(finishedJobTable *finishedJobTableHead)
+void printfJobTable(jobTable *jobTableHead)
 {
-    while(finishedJobTableHead != NULL)
+    while(jobTableHead != NULL)
     {
         printf("---------------------------\n");
-        printf("jobOrder: %d\n", finishedJobTableHead->job.jobOrder);
-        printf("Seconds: %d\n", finishedJobTableHead->job.seconds);
-        printf("StartTime: %ld\n", finishedJobTableHead->job.startTime);
-        printf("EndTime: %ld\n", finishedJobTableHead->job.endTime);
-        printf("ExeFile: %s\n", finishedJobTableHead->job.exeFile);
-        finishedJobTableHead = finishedJobTableHead->nextTable;
+        printf("jobOrder: %d\n", jobTableHead->job.jobOrder);
+        printf("Seconds: %d\n", jobTableHead->job.seconds);
+        printf("StartTime: %ld\n", jobTableHead->job.startTime);
+        printf("EndTime: %ld\n", jobTableHead->job.endTime);
+        printf("ExeFile: %s\n", jobTableHead->job.exeFile);
+        jobTableHead = jobTableHead->nextTable;
     }
     printf("---------------------------\n");
 }
@@ -169,4 +169,15 @@ void printfJobToExecute(jobQueue *jobHead)
         jobHead = jobHead->next;
     }
     printf("---------------------------\n");
+}
+
+void removeJobHead(jobTable **jobTableHead)
+{
+    jobTable *aux;
+    if (jobTableHead != NULL)
+    {
+        aux = (*jobTableHead);
+        (*jobTableHead) = (*jobTableHead)->nextTable;
+        free(aux);
+    }
 }
