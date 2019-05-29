@@ -16,6 +16,7 @@ Guilherme Lopes. - mat. 15/0128215
     #include <unistd.h>
     #include <time.h>
     #include <signal.h>
+    #include <sys/wait.h>
 #endif
 
 

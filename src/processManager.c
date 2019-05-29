@@ -11,13 +11,16 @@ Guilherme Lopes. - mat. 15/0128215
     #include "processManager.h"
 #endif
 
+struct NodeJob *nodeJobGlobal;
+
 int main(int argc, char const *argv[]) 
 {  
   key_t key = 7869; 
   int processManagerId, msqid, topologyId; 
-  struct NodeJob *nodeJob;
   struct FloodTable *floodTable;
-  int isExecutingJob = 0;
+  int isExecutingJob = 0, status_ptr;
+  pid_t pid;
+  char exeFile[50];
     
   if(argc == 3) 
   { 
@@ -30,30 +33,73 @@ int main(int argc, char const *argv[])
 
     msqid = queueCreator(key); 
 
-    eraseFloodTable(floodTable);
+    
+  
+    nodeJobGlobal = (struct NodeJob *)malloc(sizeof(struct NodeJob));
 
-    nodeJob = (struct NodeJob *)malloc(sizeof(struct NodeJob));
-
-    if (nodeJob == NULL)
+    if (nodeJobGlobal == NULL)
     {
       printf("Error on malloc.");
       exit(1);
     }
 
+    floodTable = (struct FloodTable *)malloc(sizeof(struct FloodTable));
+
+    if (floodTable == NULL)
+    {
+      printf("Error on malloc.");
+      exit(1);
+    }
+
+    /*   
+
+
+
+
+DONT FORGET TO FREE FLOODTABLE, IT NEEDS TO BE GLOBAAAL!!!!!!!!!!!!!!
+
+
+
+    */
+
+    eraseFloodTable(floodTable);
+
     while (1)
     {
-      if (receiveNodeMessage(msqid, nodeJob, (processManagerId + 1)))
+      if (receiveNodeMessage(msqid, (processManagerId + 1)))
       {
-        if (nodeJob->destination == -1 || nodeJob->destination == processManagerId)
+        if (nodeJobGlobal->destination == -1 || nodeJobGlobal->destination == processManagerId)
         {
-          if (isMessageNew(floodTable, nodeJob))
+          if (isMessageNew(floodTable))
           {
             printf("Node: %d is Executing!\n", processManagerId);
-            isExecutingJob = 1;
+            isExecutingJob = 1;                 
 
-            /* TO DO: Execute msg and set starttime, jobpid... */
+            // Checks if fork is created sucessfully
+            if ((pid = fork()) < 0)
+            {
+              printf("Error while creating execution node.\n");
+              perror("fork");
+              exit(1);
+            }
+            else
+            {
+              // Checks whether it is processes father (pid != 0) or child (pid == 0)
+              if (pid == 0)
+              {
+                strcpy(exeFile, "./");
+                strcat(exeFile, nodeJobGlobal->job.exeFile);
+                execl(exeFile, nodeJobGlobal->job.exeFile, NULL);            
+              }
+            }
             
-            if (nodeJob->destination == -1)
+            /* Sets statistics values */
+            nodeJobGlobal->job.nodeId = processManagerId;
+            nodeJobGlobal->job.nodePid = getpid();
+            nodeJobGlobal->job.jobPid = pid;
+            nodeJobGlobal->job.startTime = time (NULL);
+            
+            if (nodeJobGlobal->destination == -1)
             {
               /* TO DO: Flood message */
             }
@@ -63,7 +109,7 @@ int main(int argc, char const *argv[])
             if (processManagerId == 0)
             {
               /* checks if it is a response from a node */
-              if (isResponse(floodTable, nodeJob))
+              if (isResponse(floodTable))
               {
                 /* Send response to scheduler (mtype 777) */
               }
@@ -72,12 +118,12 @@ int main(int argc, char const *argv[])
         }
         else
         {
-          if (isResponse(floodTable, nodeJob))
+          if (isResponse(floodTable))
           {
             /* TO DO: Flood message */
           }
         }          
-          // Check message (nodeJob), if new (checking the nodeJob->job.jobOrder, using function
+          // Check message (nodeJobGlobal), if new (checking the nodeJobGlobal->job.jobOrder, using function
           // 'isNewMessage'), put on job queue (TO DO) and flood
           // if message is repeated, discart it completely (don't flood!!).
 
@@ -89,10 +135,34 @@ int main(int argc, char const *argv[])
       {
         /* Check if job has finished, with nonblocking wait function */
         /* if it has finished, set statistics and send it to node 0 */
+        //printf("MYPID: %d, CHILD PID: %d\n", getpid(), pid);
+        if (pid = waitpid(pid, &status_ptr, WUNTRACED) == -1)
+        {
+          if (&status_ptr != NULL)
+          {
+            if (WIFEXITED(status_ptr))
+            {
+              nodeJobGlobal->job.endTime = time (NULL);
+              isExecutingJob = 0;
+              printf("Tempo de inicio: %ld, tempo de fim: %ld\n", nodeJobGlobal->job.startTime,nodeJobGlobal->job.endTime);
+              /* FLOOD STATISTICS!!!!!!!!!!!!!! */
+            }
+            else
+            {
+              printf("Error: Job %d in Node %d returned %d\n", nodeJobGlobal->job.jobOrder, processManagerId, status_ptr);
+            }       
+          }  
+        }
+        else
+        {
+          printf("Execution Error.\n");
+          perror("waitpid");
+        }      
       }
       
       if (processManagerId == 0)
       {
+        /* Checks if threre are any new message from scheduler */
         getSchedulerMsg(msqid);
       }
     }
@@ -126,7 +196,7 @@ int main(int argc, char const *argv[])
 // The function needs to receive an 'int', to describe what type of signal it is redefining
 void endExecution(int sig)
 {
-
+  free(nodeJobGlobal);
 }
 
 /* convertToBinary function converts a string to binary */
@@ -147,18 +217,18 @@ void convertToBinary(char *dest, int source)
   }
 }
 
-int isMessageNew(floodTable *floodTable, struct NodeJob *nodeJob)
+int isMessageNew(floodTable *floodTable)
 {              
-  if (floodTable->uniqueId == nodeJob->job.jobOrder && floodTable->wasExecuted == 0)
+  if (floodTable->uniqueId == nodeJobGlobal->job.jobOrder && floodTable->wasExecuted == 0)
   {
     floodTable->wasExecuted = 1;
     return 1;
   } 
 
-  if (floodTable->uniqueId != nodeJob->job.jobOrder)
+  if (floodTable->uniqueId != nodeJobGlobal->job.jobOrder)
   {
     eraseFloodTable(floodTable);
-    floodTable->uniqueId = nodeJob->job.jobOrder;
+    floodTable->uniqueId = nodeJobGlobal->job.jobOrder;
     floodTable->wasExecuted = 1;
     return 1;
   }
@@ -166,17 +236,17 @@ int isMessageNew(floodTable *floodTable, struct NodeJob *nodeJob)
   return 0;
 }
 
-int isResponse(floodTable *floodTable, struct NodeJob *nodeJob)
+int isResponse(floodTable *floodTable)
 {
-  if (floodTable->nodesResponse[nodeJob->source] == 0)
+  if (floodTable->nodesResponse[nodeJobGlobal->source] == 0)
   {
-    if (floodTable->uniqueId != nodeJob->job.jobOrder)
+    if (floodTable->uniqueId != nodeJobGlobal->job.jobOrder)
     {
       eraseFloodTable(floodTable);
-      floodTable->uniqueId = nodeJob->job.jobOrder;
+      floodTable->uniqueId = nodeJobGlobal->job.jobOrder;
     }
 
-    floodTable->nodesResponse[nodeJob->source] = 1;
+    floodTable->nodesResponse[nodeJobGlobal->source] = 1;
     
     return 1;
   }
@@ -184,7 +254,7 @@ int isResponse(floodTable *floodTable, struct NodeJob *nodeJob)
   return 0;
 }
 
-int receiveNodeMessage(int msqid, struct NodeJob *nodeJob, int nodeId)
+int receiveNodeMessage(int msqid, int nodeId)
 {
   struct msgbuf bufReceive;
   char auxString[50], pattern[2] = "|";
@@ -195,13 +265,13 @@ int receiveNodeMessage(int msqid, struct NodeJob *nodeJob, int nodeId)
     /* Cuts the string with the pattern to be parsed and Sets the job values */
     memset(auxString,0,50);
     copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
-    nodeJob->destination = atoi(auxString);
+    nodeJobGlobal->destination = atoi(auxString);
 
     memset(auxString,0,50);
     copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
-    nodeJob->source = atoi(auxString);
+    nodeJobGlobal->source = atoi(auxString);
 
-    convertBuf2Job(bufReceive.mtext, &nodeJob->job); 
+    convertBuf2Job(bufReceive.mtext, &nodeJobGlobal->job); 
 
     return 1;
   }
@@ -253,7 +323,7 @@ void getSchedulerMsg(int msqid)
   }
 }
 
-void floodNodeMessage(int msqid, struct NodeJob *nodeJob, int topology)
+void floodNodeMessage(int msqid, int topology)
 {
   
 }

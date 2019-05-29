@@ -16,6 +16,7 @@ Guilherme Lopes. - mat. 15/0128215
     #include <unistd.h>
     #include <time.h>
     #include <signal.h>
+    #include <sys/wait.h>
 #endif
 
 #ifndef _Queue_library
@@ -44,9 +45,9 @@ typedef struct NodeJob
 
 void endExecution(int);
 void convertToBinary(char *, int);
-void floodNodeMessage(int, struct NodeJob *, int);
-int receiveNodeMessage(int, struct NodeJob *, int);
-int isMessageNew(floodTable *, struct NodeJob *);
-int isResponse(floodTable *, struct NodeJob *);
+void floodNodeMessage(int, int);
+int receiveNodeMessage(int, int);
+int isMessageNew(floodTable *);
+int isResponse(floodTable *);
 void eraseFloodTable(floodTable *);
 void getSchedulerMsg(int);
