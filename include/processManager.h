@@ -33,7 +33,6 @@ typedef struct FloodTable
   int wasExecuted;    // is 0 when uniqueId was filled by a nodes response, 1 when uniqueId was filled by a job execution
   int uniqueId;       // uniqueId is the ID for each Job
   int nodesResponse[16];
-  struct FloodTable *next;
 } floodTable;
 
 typedef struct NodeJob
@@ -45,11 +44,9 @@ typedef struct NodeJob
 
 void endExecution(int);
 void convertToBinary(char *, int);
-void addToFloodTableUniqueId(floodTable **, struct NodeJob *);              // Receives the floodTable head and uniqueId
-void addToFloodTableNodesResponse(floodTable **, struct NodeJob *);    // Receives the floodTable head, node # and uniqueId
-int isInFloodTable(floodTable *, int, floodTable **);
-void deleteFloodTable(floodTable **);
-void sendNodeMessage(int, struct NodeJob *, int);
+void floodNodeMessage(int, struct NodeJob *, int);
 int receiveNodeMessage(int, struct NodeJob *, int);
 int isMessageNew(floodTable *, struct NodeJob *);
 int isResponse(floodTable *, struct NodeJob *);
+void eraseFloodTable(floodTable *);
+void eraseNodeJob(struct NodeJob *);

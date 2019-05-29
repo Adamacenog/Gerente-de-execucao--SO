@@ -14,10 +14,12 @@ Guilherme Lopes. - mat. 15/0128215
 int main(int argc, char const *argv[]) 
 {  
   key_t key = 7869; 
-  struct msgbuf pmBuffer; 
+  struct msgbuf buf; 
   int processManagerId, msqid, topologyId; 
   struct NodeJob *nodeJob;
-  char execFile[10], *seconds, pattern[2] = "|"; 
+  struct FloodTable *floodTable;
+  int isExecutingJob = 0;
+  char auxString[10];
     
   if(argc == 3) 
   { 
@@ -26,20 +28,94 @@ int main(int argc, char const *argv[])
       /* Receive the node id through args  */
       processManagerId = atoi(argv[1]);
       topologyId =  atoi(argv[2]);
-      printf("PROCESS MANAGER ID: %d\nTOPOLOGY ID: %d\n", processManagerId, topologyId);
+      printf("PROCESS MANAGER ID: %d TOPOLOGY ID: %d\n", processManagerId, topologyId);
   
       msqid = queueCreator(key); 
+
+      eraseFloodTable(floodTable);
+      //eraseNodeJob(nodeJob);
 
       while (1)
       {
         if (receiveNodeMessage(msqid, nodeJob, (processManagerId + 1)))
         {
+          if (nodeJob->destination == -1 || nodeJob->destination == processManagerId)
+          {
+            if (isMessageNew(floodTable, nodeJob))
+            {
+              printf("Node: %d is Executing!\n", processManagerId);
+              isExecutingJob = 1;
+
+              /* TO DO: Execute msg and set starttime, jobpid... */
+              
+              if (nodeJob->destination == -1)
+              {
+                /* TO DO: Flood message */
+              }
+            }
+            else
+            {
+              if (processManagerId == 0)
+              {
+                /* checks if it is a response from a node */
+                if (isResponse(floodTable, nodeJob))
+                {
+                  /* Send response to scheduler (mtype 777) */
+                }
+              } 
+            }
+          }
+          else
+          {
+            if (isResponse(floodTable, nodeJob))
+            {
+              /* TO DO: Flood message */
+            }
+          }          
             // Check message (nodeJob), if new (checking the nodeJob->job.jobOrder, using function
             // 'isNewMessage'), put on job queue (TO DO) and flood
             // if message is repeated, discart it completely (don't flood!!).
 
             // Each node can take a new job after the previous job has finished the execution or
             // if the node is free (not executing any job)            
+        }
+
+        if (isExecutingJob)
+        {
+          /* Check if job has finished, with nonblocking wait function */
+          /* if it has finished, set statistics and send it to node 0 */
+        }
+        
+        if (processManagerId == 0)
+        {
+          /* Checks if threre are any new message from scheduler (mtype = 555) */
+          if (receiveMessage(msqid, &((*nodeJob).job), 555))
+          {
+            printf("Received from scheduler!!\n");
+            /* Node 0 receives the message, and converts it to the nodes message 'language' */
+            nodeJob->source = 0;
+            nodeJob->destination = -1;
+            memset(buf.mtext,0,MSGSZ);
+            memset(auxString,0,10);
+
+            sprintf(auxString, "%d", nodeJob->destination);
+            strcat(buf.mtext, auxString);
+            strcat(buf.mtext, "|");
+            memset(auxString,0,10);
+
+            sprintf(auxString, "%d", nodeJob->source);
+            strcat(buf.mtext, auxString);
+            strcat(buf.mtext, "|");
+          
+            convertJob2Buf(&nodeJob->job, buf.mtext);
+
+            printf("JobOrder: %d\n", nodeJob->job.jobOrder);
+
+            /* Sends the converted message to node 0 */
+            buf.mtype = 1;
+
+            messageSend(msqid, buf, (strlen(buf.mtext) + 1));
+          }
         }
       }
 
@@ -64,7 +140,7 @@ int main(int argc, char const *argv[])
   { 
       printf("Unsificcient argument numbers."); 
       exit(1); 
-  } 
+  }
     
   return 0; 
 }
@@ -93,154 +169,45 @@ void convertToBinary(char *dest, int source)
   }
 }
 
-/*  
-    isInFloodTable runs over the flood table of a specific process manager
-    checking if the message had already been sent to it.
-    If the message had already been sent, it ignores the message.
-*/
-
-int isInFloodTable(floodTable *floodTableHead, int uniqueId, floodTable **found)
-{
-  while (floodTableHead != NULL)
+int isMessageNew(floodTable *floodTable, struct NodeJob *nodeJob)
+{              
+  if (floodTable->uniqueId == nodeJob->job.jobOrder && floodTable->wasExecuted == 0)
   {
-    if (floodTableHead->uniqueId == uniqueId)
-    {
-      (*found) = floodTableHead;
+    floodTable->wasExecuted = 1;
+    return 1;
+  } 
 
-      return 1;
-    }
-
-    floodTableHead = floodTableHead->next;
+  if (floodTable->uniqueId != nodeJob->job.jobOrder)
+  {
+    eraseFloodTable(floodTable);
+    floodTable->uniqueId = nodeJob->job.jobOrder;
+    floodTable->wasExecuted = 1;
+    return 1;
   }
 
-  (*found) = NULL;
   return 0;
 }
 
-/* 
-  addToFloodTableUniqueId function verifies if the node had already received the message,
-  otherwise it takes job unique id and saves in the floodTable.
-
-*/
-
-void addToFloodTableUniqueId(floodTable **floodTableHead, struct NodeJob *nodeJob)
+int isResponse(floodTable *floodTable, struct NodeJob *nodeJob)
 {
-  floodTable *aux, *aux2;
-
-  if (isInFloodTable((*floodTableHead), nodeJob->job.jobOrder, &aux))
+  if (floodTable->nodesResponse[nodeJob->source] == 0)
   {
-    aux->wasExecuted = 1;
-  }
-  else
-  {
-    aux = (floodTable *) malloc(sizeof(floodTable));
-    if (aux == NULL)
+    if (floodTable->uniqueId != nodeJob->job.jobOrder)
     {
-      printf("Error on malloc.");
-      exit(1);
+      eraseFloodTable(floodTable);
+      floodTable->uniqueId = nodeJob->job.jobOrder;
     }
 
-    aux->uniqueId = nodeJob->job.jobOrder;
-    aux->wasExecuted = 1;
-    aux->next = NULL;
-
-    if ((*floodTableHead) == NULL)
-    {
-      (*floodTableHead) = aux;
-    }
-    else
-    {
-      aux2 = (*floodTableHead);
-
-      while (aux2->next != NULL)
-        aux2 = aux2->next;
-
-      aux2->next = aux;
-    }  
-  }  
-}
-
-void addToFloodTableNodesResponse(floodTable **floodTableHead, struct NodeJob *nodeJob)
-{
-  floodTable *aux, *aux2;
-
-  if (isInFloodTable((*floodTableHead), nodeJob->job.jobOrder, &aux))
-  {
-    aux->nodesResponse[nodeJob->source] = 1;
-  }
-  else
-  {
-    aux = (floodTable *) malloc(sizeof(floodTable));
-    if (aux == NULL)
-    {
-      printf("Error on malloc.");
-      exit(1);
-    }
-
-    aux->uniqueId = nodeJob->job.jobOrder;
-    aux->wasExecuted = 0;
-    aux->nodesResponse[nodeJob->source] = 1;
-    aux->next = NULL;
-
-    if ((*floodTableHead) == NULL)
-    {
-      (*floodTableHead) = aux;
-    }
-    else
-    {
-      aux2 = (*floodTableHead);
-
-      while (aux2->next != NULL)
-        aux2 = aux2->next;
-
-      aux2->next = aux;
-    }  
-  }  
-}
-
-void deleteFloodTable(floodTable **floodTableHead)
-{
-  floodTable *aux;
-
-  while ((*floodTableHead) != NULL)
-  {
-    aux = (*floodTableHead);
-    (*floodTableHead) = (*floodTableHead)->next;
-    free(aux);
-  }
-}
-
-int isMessageNew(floodTable *floodTableHead, struct NodeJob *nodeJob)
-{
-  floodTable *found = NULL;
-  if (isInFloodTable(floodTableHead, nodeJob->job.jobOrder, &found))
-  {
-    if (found->wasExecuted == 0)
-      return 1;
-    else
-      return 0;
+    floodTable->nodesResponse[nodeJob->source] = 1;
+    
+    return 1;
   }
 
-  return 1;
-}
-
-int isResponse(floodTable *floodTableHead, struct NodeJob *nodeJob)
-{
-  floodTable *found = NULL;
-  if (isInFloodTable(floodTableHead, nodeJob->job.jobOrder, &found))
-  {
-    if (found->nodesResponse[nodeJob->source] == 0)
-      return 1;
-    else
-      return 0;
-  }
-
-  return 1;
+  return 0;
 }
 
 int receiveNodeMessage(int msqid, struct NodeJob *nodeJob, int nodeId)
 {
-  struct Job *job;
   struct msgbuf bufReceive;
   char auxString[50], pattern[2] = "|";
 
@@ -256,16 +223,7 @@ int receiveNodeMessage(int msqid, struct NodeJob *nodeJob, int nodeId)
     copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
     nodeJob->source = atoi(auxString);
 
-    convertBuf2Job(bufReceive.mtext, job);  
-
-    nodeJob->job.nodeId = job->nodeId;
-    nodeJob->job.delayedPid = job->delayedPid;
-    nodeJob->job.jobPid = job->jobPid;
-    nodeJob->job.jobOrder = job->jobOrder;
-    nodeJob->job.seconds = job->seconds;
-    nodeJob->job.startTime = job->startTime;
-    nodeJob->job.endTime = job->endTime;
-    strcpy(nodeJob->job.exeFile, job->exeFile);
+    convertBuf2Job(bufReceive.mtext, &nodeJob->job); 
 
     return 1;
   }
@@ -273,7 +231,30 @@ int receiveNodeMessage(int msqid, struct NodeJob *nodeJob, int nodeId)
   return 0;
 }
 
-void sendNodeMessage(int msqid, struct NodeJob *nodeJob, int topology)
+void eraseFloodTable(floodTable *floodTable)
+{
+  floodTable->wasExecuted = 0;
+  floodTable->uniqueId = -1;
+
+  for (int i = 0; i < 16; i++)
+    floodTable->nodesResponse[i] = 0;
+}
+
+void eraseNodeJob(struct NodeJob *nodeJob)
+{
+  nodeJob->destination = -1;
+  nodeJob->source = -1;
+  nodeJob->job.jobOrder = 0;
+  strcpy(nodeJob->job.exeFile, "");
+  nodeJob->job.delayedPid = 0;
+  nodeJob->job.endTime = 0;
+  nodeJob->job.jobPid = 0;
+  nodeJob->job.nodeId = 0;
+  nodeJob->job.seconds = 0;
+  nodeJob->job.startTime = 0;
+}
+
+void floodNodeMessage(int msqid, struct NodeJob *nodeJob, int topology)
 {
   
 }

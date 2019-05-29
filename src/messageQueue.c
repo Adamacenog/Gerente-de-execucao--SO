@@ -89,57 +89,13 @@ message queue
 */
 void createMessage(int msqid, struct Job *jobEntry, long mtype)
 {
-  char auxString[10];
   struct msgbuf buf;
-  int i;
 
   memset(buf.mtext,0,MSGSZ);
-  memset(auxString,0,10);
-
-  sprintf(auxString, "%d", (*jobEntry).nodeId);
-  strcat(buf.mtext, auxString);
-  strcat(buf.mtext, "|");
-  memset(auxString,0,10);
-
-  sprintf(auxString, "%d", (*jobEntry).nodePid);
-  strcat(buf.mtext, auxString);
-  strcat(buf.mtext, "|");
-  memset(auxString,0,10);
-
-  sprintf(auxString, "%d", (*jobEntry).delayedPid);
-  strcat(buf.mtext, auxString);
-  strcat(buf.mtext, "|");
-  memset(auxString,0,10);
-
-  sprintf(auxString, "%d", (*jobEntry).jobPid);
-  strcat(buf.mtext, auxString);
-  strcat(buf.mtext, "|");
-  memset(auxString,0,10);
-
-  sprintf(auxString, "%d", (*jobEntry).jobOrder);
-  strcat(buf.mtext, auxString);
-  strcat(buf.mtext, "|");
-  memset(auxString,0,10);
-
-  sprintf(auxString, "%d", (*jobEntry).seconds);
-  strcat(buf.mtext, auxString);
-  strcat(buf.mtext, "|");
-  memset(auxString,0,10);
-
-  sprintf(auxString, "%ld", (*jobEntry).startTime);
-  strcat(buf.mtext, auxString);
-  strcat(buf.mtext, "|");
-  memset(auxString,0,10);
-
-  sprintf(auxString, "%ld", (*jobEntry).endTime);
-  strcat(buf.mtext, auxString);
-  strcat(buf.mtext, "|");
-  memset(auxString,0,10);
-
-  strcat(buf.mtext, (*jobEntry).exeFile);
+  convertJob2Buf(jobEntry, buf.mtext);
 
   buf.mtype = mtype;
-
+  printf("Message sent: %s\n", buf.mtext);
   messageSend(msqid, buf, (strlen(buf.mtext) + 1));
 }
 
@@ -176,6 +132,7 @@ int receiveMessage(int msqid, struct Job *jobExit, long mtype)
   /* Receives a msg with mtype # */
   if (messageReceive(msqid, &bufReceive, mtype, 0))
   {
+    printf("BEFORE\n");
     convertBuf2Job(bufReceive.mtext, jobExit);  
     return 1;
   }
@@ -187,12 +144,15 @@ void convertBuf2Job(char *bufReceive, struct Job *jobExit)
 {
   char auxString[50], pattern[2] = "|";
   time_t startTime, endTime;
-
+  printf("FIRST\n");
   /* Cuts the string with the pattern to be parsed and Sets the job values */
     memset(auxString,0,50);
+    printf("SECOND\n");
     copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
+    printf("STRING: '%s'\n", auxString);
+    printf("JobExit-NodeId: %d\n", (*jobExit).nodeId);
     (*jobExit).nodeId = atoi(auxString);
-
+    printf("SECOND\n");
     memset(auxString,0,50);
     copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     (*jobExit).nodePid = atoi(auxString);
@@ -235,4 +195,54 @@ void convertBuf2Job(char *bufReceive, struct Job *jobExit)
     memset(auxString,0,50);
     copyNremoveByPattern(auxString, 50, bufReceive, 500, *pattern);
     strcpy((*jobExit).exeFile, auxString);
+    printf("THIRD\n");
+}
+
+void convertJob2Buf(struct Job *jobEntry, char *buf)
+{
+  char auxString[10];
+
+  memset(auxString,0,10);
+
+  sprintf(auxString, "%d", (*jobEntry).nodeId);
+  strcat(buf, auxString);
+  strcat(buf, "|");
+  memset(auxString,0,10);
+
+  sprintf(auxString, "%d", (*jobEntry).nodePid);
+  strcat(buf, auxString);
+  strcat(buf, "|");
+  memset(auxString,0,10);
+
+  sprintf(auxString, "%d", (*jobEntry).delayedPid);
+  strcat(buf, auxString);
+  strcat(buf, "|");
+  memset(auxString,0,10);
+
+  sprintf(auxString, "%d", (*jobEntry).jobPid);
+  strcat(buf, auxString);
+  strcat(buf, "|");
+  memset(auxString,0,10);
+
+  sprintf(auxString, "%d", (*jobEntry).jobOrder);
+  strcat(buf, auxString);
+  strcat(buf, "|");
+  memset(auxString,0,10);
+
+  sprintf(auxString, "%d", (*jobEntry).seconds);
+  strcat(buf, auxString);
+  strcat(buf, "|");
+  memset(auxString,0,10);
+
+  sprintf(auxString, "%ld", (*jobEntry).startTime);
+  strcat(buf, auxString);
+  strcat(buf, "|");
+  memset(auxString,0,10);
+
+  sprintf(auxString, "%ld", (*jobEntry).endTime);
+  strcat(buf, auxString);
+  strcat(buf, "|");
+  memset(auxString,0,10);
+
+  strcat(buf, (*jobEntry).exeFile);
 }

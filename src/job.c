@@ -22,8 +22,11 @@ void addToQueue(jobQueue **jobHead, job job)
         printf("Error on malloc.");
         exit(1);
     }
-    
+
     aux->remainingSeconds = job.seconds;
+    aux->job.nodeId = job.nodeId;
+    aux->job.delayedPid = job.delayedPid;
+    aux->job.jobPid = job.jobPid;
     aux->job.jobOrder = job.jobOrder;
     aux->job.seconds = job.seconds;
     aux->job.startTime = job.startTime;

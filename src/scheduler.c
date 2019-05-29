@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
       msqid = queueCreator(key);
 
       /* Creates N process that will execute the process manager logic */
-      for (i = 0; i < nodesSize; i++)
+      for (i = 0; i < 1; i++)
       {
         busyTable[i] = 0;
 
@@ -129,8 +129,6 @@ void runScheduler(int msqid, int *jobCounter, int *busyNodes)
   if (receiveMessage(msqid, jobEntry, 666))
   {
     (*jobEntry).jobOrder = *jobCounter;
-    printf("scheduler-MENSSAGE: %s\n", (*jobEntry).exeFile);
-    printf("scheduler-SECONDS: %d\n", (*jobEntry).seconds);
     alarmRemaining = alarm(0);
     
     if (jobQueueHead != NULL)
@@ -172,9 +170,9 @@ void runScheduler(int msqid, int *jobCounter, int *busyNodes)
     {
       *busyNodes = 16;
       printf("EXECUTING JOB %d\n", (*job2ExecuteHead).job.jobOrder);
-
-      /* Message is created and sent to node 0 (using mtype 1) */
-      createMessage(msqid, &((*job2ExecuteHead).job), 1);
+      
+      /* Message is created and sent to node 0 (using mtype 555) */
+      createMessage(msqid, &((*job2ExecuteHead).job), 555);
       removeJobHead(&job2ExecuteHead);
     }
   }

@@ -47,3 +47,4 @@ void createMessage(int, struct Job *, long);
 void copyNremoveByPattern(char *, int, char *, int, char);
 int receiveMessage(int, struct Job *, long);
 void convertBuf2Job(char *, struct Job *);
+void convertJob2Buf(struct Job *, char *);
