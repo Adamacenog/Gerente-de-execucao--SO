@@ -20,7 +20,7 @@ int main(int argc, char const *argv[])
   int isExecutingJob = 0, status_ptr;
   pid_t pid;
   char exeFile[50];
-    
+
   if(argc == 3) 
   { 
     /* Ends if it receives a SIGTERM */
@@ -65,7 +65,6 @@ int main(int argc, char const *argv[])
             }
             
             /* Sets statistics values */
-            nodeJobExecution.job.nodeId = processManagerId;
             nodeJobExecution.job.nodePid = getpid();
             nodeJobExecution.job.jobPid = pid;
             nodeJobExecution.job.startTime = time (NULL);
@@ -73,7 +72,7 @@ int main(int argc, char const *argv[])
             if (nodeJobExecution.destination == -1)
             {
               /* Floods the message */
-              floodNodeMessage(msqid, &nodeJobExecution, topologyId);
+              floodNodeMessage(msqid, &nodeJobExecution, processManagerId,topologyId);
             }
           }
           else
@@ -95,10 +94,8 @@ int main(int argc, char const *argv[])
         {
           if (isResponse(&nodeJobResponses, &floodTable))
           {
-            nodeJobResponses.job.nodeId = processManagerId;
-
             /* Floods the message */
-            floodNodeMessage(msqid, &nodeJobResponses, topologyId);
+            floodNodeMessage(msqid, &nodeJobResponses, processManagerId, topologyId);
           }
         }          
           // Check message (nodeJob), if new (checking the nodeJob->job.jobOrder, using function
@@ -139,7 +136,7 @@ int main(int argc, char const *argv[])
               /* REMOVE!!! */
               
               /* Floods the message */
-              floodNodeMessage(msqid, &nodeJobExecution, topologyId);
+              floodNodeMessage(msqid, &nodeJobExecution, processManagerId, topologyId);
             }
             else
             {
@@ -194,21 +191,26 @@ void endExecution(int sig)
 }
 
 /* convertToBinary function converts a string to binary */
-void convertToBinary(char *dest, int source)
+void convertToBinary(int *dest, int source)
 {
   int i, k;
   
-  memset(dest,0,strlen(dest));
+  memset(dest,0,4*sizeof(int));
  
-  for (i = 3; i >= 0; i--)
+  for (i = 0; i < 4; i++)
   {
     k = source >> i;
  
     if (k & 1)
-      strcat(dest, "1");
+      dest[i] = 1;
     else
-      strcat(dest, "0");
+      dest[i] = 0;
   }
+}
+
+void convertFromBinary2Int(int *dest, int *source)
+{
+  *dest = source[0] + source[1]*2 + source[2]*4 + source[3]*8;
 }
 
 int isMessageNew(nodeJob *nodeJob, floodTable *floodTable)
@@ -284,46 +286,85 @@ void eraseFloodTable(floodTable *floodTable)
 
 void getSchedulerMsg(int msqid)
 {
-  struct msgbuf buf; 
   struct Job job;
-  char auxString[10];
+  struct NodeJob nodeJob;
+  
 
   /* Checks if threre are any new message from scheduler (mtype = 555) */
   if (receiveMessage(msqid, &job, 555))
   {
     printf("Received from scheduler!!\n");
     /* Node 0 receives the message, and converts it to the nodes message 'language' */
-   
-    memset(buf.mtext,0,MSGSZ);
-    memset(auxString,0,10);
-
-    /* sets destination */
-    sprintf(auxString, "%d", -1);
-    strcat(buf.mtext, auxString);
-    strcat(buf.mtext, "|");
-    memset(auxString,0,10);
-
-    /* sets source */
-    sprintf(auxString, "%d", 0);
-    strcat(buf.mtext, auxString);
-    strcat(buf.mtext, "|");
-  
-    convertJob2Buf(&job, buf.mtext);
-
-    /* Sends the converted message to node 0 */
-    buf.mtype = 1;
-
-    messageSend(msqid, buf, (strlen(buf.mtext) + 1));
+    
+    nodeJob.destination = -1;
+    nodeJob.source = 0;
+    nodeJob.job = job;
+    
+    sendNodeMessage(msqid, &nodeJob, 1);
   }
 }
 
-void floodNodeMessage(int msqid, nodeJob *nodeJob, int topology)
+void sendNodeMessage(int msqid, struct NodeJob *nodejob, long mtype)
 {
+  struct msgbuf buf; 
+  char auxString[10];
+
+  memset(buf.mtext,0,MSGSZ);
+  memset(auxString,0,10);
+
+  /* sets destination */
+  sprintf(auxString, "%d", nodejob->destination);
+  strcat(buf.mtext, auxString);
+  strcat(buf.mtext, "|");
+  memset(auxString,0,10);
+
+  /* sets source */
+  sprintf(auxString, "%d", nodejob->source);
+  strcat(buf.mtext, auxString);
+  strcat(buf.mtext, "|");
+
+  convertJob2Buf(&nodejob->job, buf.mtext);
+
+  /* Sends the converted message to node 0 */
+  buf.mtype = mtype;
+
+  messageSend(msqid, buf, (strlen(buf.mtext) + 1));
+}
+
+void floodNodeMessage(int msqid, nodeJob *nodeJob, int processManagerId, int topology)
+{
+  int whoSent = nodeJob->job.nodeId, binaryAddr[4], i, adjacentNode[4], sendValue;
+  struct msgbuf buf;
+
+  /* Sets the nodeId of the node that is sending the message */
+  nodeJob->job.nodeId = processManagerId;
+
   switch (topology)
   {
     /* Hypercube */
     case 1:
-    /* code */
+      convertToBinary(binaryAddr, processManagerId);
+
+      for (i = 0; i < 4; i++)
+      {
+        if ( binaryAddr[i] == 1)
+          binaryAddr[i] = 0;
+        else
+          binaryAddr[i] = 1;
+        
+        convertFromBinary2Int(&sendValue, binaryAddr);
+        
+        if (sendValue != whoSent && sendValue != processManagerId)
+        {
+          /* Send the message with mtype sendValue */
+          sendNodeMessage(msqid, nodeJob, (sendValue + 1));
+        }
+
+        if ( binaryAddr[i] == 1)
+          binaryAddr[i] = 0;
+        else
+          binaryAddr[i] = 1;       
+      }
       break;
     
     /* Torus */
