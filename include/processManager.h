@@ -45,9 +45,9 @@ typedef struct NodeJob
 
 void endExecution(int);
 void convertToBinary(char *, int);
-void floodNodeMessage(int, int);
-int receiveNodeMessage(int, int);
-int isMessageNew(floodTable *);
-int isResponse(floodTable *);
+void floodNodeMessage(int, nodeJob *, int);
+int receiveNodeMessage(int, nodeJob *, int);
+int isMessageNew(nodeJob *, floodTable *);
+int isResponse(nodeJob *, floodTable *);
 void eraseFloodTable(floodTable *);
 void getSchedulerMsg(int);
