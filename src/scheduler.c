@@ -12,20 +12,18 @@ Guilherme Lopes. - mat. 15/0128215
 #endif
 
 // These variables need to be global, so that the signal redefinition can use them.
-int msqid;
+int msqid, pid[16], busyNodes = 0, nodesSize;
 struct JobQueue *jobQueueHead = NULL;
 struct JobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NULL, *job2ExecuteHead = NULL, *job2ExecuteTail = NULL;
 
 int main(int argc, char *argv[])
 {
-  int i, pid[16], busyTable[16], jobCounter, topologyType = -1, nodesSize, busyNodes = 0;
+  int i, busyTable[16], jobCounter, topologyType = -1;
   char *topology, jobIdString[10], topologyString[10];
   key_t key = 7869;
 
   signal(SIGALRM, delayedMessageSend);
   signal(SIGTERM, terminateScheduler);
-
-  printf("My pid: %d\n", getpid());
 
   if (argc == 2)
   {
@@ -71,6 +69,9 @@ int main(int argc, char *argv[])
       /* Initializes message queue */
       msqid = queueCreator(key);
 
+      /* Sends to the killScheduler the scheduler pid */
+      sendPid(msqid, getpid());
+
       /* Creates N process that will execute the process manager logic */
       for (i = 0; i < nodesSize; i++)
       {
@@ -100,7 +101,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-      runScheduler(msqid, &jobCounter, &busyNodes);
+      runScheduler(msqid, &jobCounter);
     }
   }
   else
@@ -113,7 +114,7 @@ int main(int argc, char *argv[])
 }
 
 
-void runScheduler(int msqid, int *jobCounter, int *busyNodes)
+void runScheduler(int msqid, int *jobCounter)
 {
   int alarmRemaining;
   struct Job jobEntry, jobExit;
@@ -154,14 +155,14 @@ void runScheduler(int msqid, int *jobCounter, int *busyNodes)
   if (receiveMessage(msqid, &jobExit, 777))
   {
     addToJobTable(&finishedJobTableHead, &finishedJobTableTail, jobExit); 
-    *busyNodes -= 1; // Each new message from node 0 represents a node that is free
+    busyNodes -= 1; // Each new message from node 0 represents a node that is free
   }
 
-  if (*busyNodes == 0)
+  if (busyNodes == 0)
   {
     if (job2ExecuteHead != NULL)
     {
-      *busyNodes = 16;
+      busyNodes = nodesSize;
       //printf("EXECUTING JOB %d\n", (*job2ExecuteHead).job.jobOrder);
       
       /* Message is created and sent to node 0 (using mtype 555) */
@@ -198,7 +199,16 @@ void terminateScheduler(int sig)
 {
   printf("\n\nShutting down...\n");
 
-  /* TO DO: 'KILL' all nodes, call 'wait' for all nodes... */
+  /* Checks if all nodes are idle */
+  if (busyNodes == 0)
+  {
+    killAllNodes();
+  }
+  else
+  {
+    /* TO DO - SEND SOFT KILL MSG */
+    /* If there is a node still executing, tell it to stop and send its statistics (endtime comes with -1) */
+  }  
   
   if (jobQueueHead != NULL)
   {
@@ -232,4 +242,47 @@ void terminateScheduler(int sig)
   queueDestroy(msqid);
 
   exit(0);
+}
+
+void killAllNodes()
+{
+  int status_ptr, i, process2End = nodesSize;
+
+  for (i = 0; i < nodesSize; i++)
+  {
+    if (kill(pid[i],SIGTERM) == -1)
+    {
+      printf("Error while sending signal.\n");
+      perror("kill");
+    }
+  }
+
+  while (process2End != 0)
+  {
+    if (waitpid(pid[process2End-1], &status_ptr, WUNTRACED) == pid[process2End-1])
+    {
+      if (WIFEXITED(status_ptr))
+      {
+        process2End -= 1;        
+      }
+      else
+      {
+        printf("Error, node did not finish correctly!\n");
+      }
+    }
+    else
+    {
+      printf("Execution Error.\n");
+      perror("waitpid");
+    }  
+  }
+}
+
+void sendPid(int msqid, pid_t pid)
+{
+  struct msgbuf buf;
+
+  buf.mtype = 999;  // Type used to communicate with killScheduler
+  sprintf(buf.mtext, "%d", pid);
+  messageSend(msqid, buf, (strlen(buf.mtext) + 1));
 }

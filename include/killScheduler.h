@@ -19,23 +19,7 @@ Guilherme Lopes. - mat. 15/0128215
     #include <sys/wait.h>
 #endif
 
-#ifndef _ProcessManager_library
-  #define _ProcessManager_library
-    #include "processManager.h"
-#endif
-
 #ifndef _Queue_library
   #define _Queue_library
     #include "messageQueue.h"
 #endif
-
-#ifndef _Job_Queue
-  #define _Job_Queue
-    #include "job.h"
-#endif
-
-void runScheduler(int, int *);
-void delayedMessageSend(int);
-void terminateScheduler(int);
-void killAllNodes(void);
-void sendPid(int, pid_t);

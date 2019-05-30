@@ -106,34 +106,31 @@ int main(int argc, char const *argv[])
         /* if it has finished, set statistics and send it to node 0 */
         if (waitpid(pid, &status_ptr, WUNTRACED) == pid)
         {
-          if (&status_ptr != NULL)
+          if (WIFEXITED(status_ptr))
           {
-            if (WIFEXITED(status_ptr))
-            {
-              nodeJobExecution.job.endTime = time (NULL);
-              nodeJobExecution.source = processManagerId;
-              nodeJobExecution.destination = 0;
-              isExecutingJob = 0;
+            nodeJobExecution.job.endTime = time (NULL);
+            nodeJobExecution.source = processManagerId;
+            nodeJobExecution.destination = 0;
+            isExecutingJob = 0;
 
-              if (processManagerId != 0)
-              {
-                /* Floods the message */
-                floodNodeMessage(msqid, &nodeJobExecution, processManagerId, topologyId);
-              }
-              else
-              {
-                nodeJobResponses.job.nodeId = 0;
-                
-                /* Sends zero response to scheduler (mtype 777) */
-                createMessage(msqid, &nodeJobExecution.job, 777);
-                printf("Statistics NodeId: %d, JobOrder: %d\n", nodeJobExecution.job.nodeId, nodeJobExecution.job.jobOrder);
-              }             
+            if (processManagerId != 0)
+            {
+              /* Floods the message */
+              floodNodeMessage(msqid, &nodeJobExecution, processManagerId, topologyId);
             }
             else
             {
-              printf("Error: Job %d in Node %d returned %d\n", nodeJobExecution.job.jobOrder, processManagerId, status_ptr);
-            }       
-          }  
+              nodeJobResponses.job.nodeId = 0;
+              
+              /* Sends zero response to scheduler (mtype 777) */
+              createMessage(msqid, &nodeJobExecution.job, 777);
+              printf("Statistics NodeId: %d, JobOrder: %d\n", nodeJobExecution.job.nodeId, nodeJobExecution.job.jobOrder);
+            }             
+          }
+          else
+          {
+            printf("Error: Job %d in Node %d returned %d\n", nodeJobExecution.job.jobOrder, processManagerId, status_ptr);
+          }       
         }
         else
         {
@@ -161,7 +158,7 @@ int main(int argc, char const *argv[])
 // The function needs to receive an 'int', to describe what type of signal it is redefining
 void endExecution(int sig)
 {
-
+  exit(0);
 }
 
 /* convertToBinary function converts a string to binary */
