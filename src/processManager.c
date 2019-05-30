@@ -16,7 +16,7 @@ int main(int argc, char const *argv[])
   key_t key = 7869; 
   int processManagerId, msqid, topologyId; 
   struct FloodTable floodTable;
-  struct NodeJob nodeJob;
+  struct NodeJob nodeJobExecution, nodeJobResponses;
   int isExecutingJob = 0, status_ptr;
   pid_t pid;
   char exeFile[50];
@@ -36,12 +36,13 @@ int main(int argc, char const *argv[])
 
     while (1)
     {
-      if (receiveNodeMessage(msqid, &nodeJob, (processManagerId + 1)))
+      if (receiveNodeMessage(msqid, &nodeJobResponses, (processManagerId + 1)))
       {
-        if (nodeJob.destination == -1 || nodeJob.destination == processManagerId)
+        if (nodeJobResponses.destination == -1 || nodeJobResponses.destination == processManagerId)
         {
-          if (isMessageNew(&nodeJob, &floodTable))
+          if (isMessageNew(&nodeJobResponses, &floodTable))
           {
+            nodeJobExecution = nodeJobResponses;
             printf("Node: %d is Executing!\n", processManagerId);
             isExecutingJob = 1;                 
 
@@ -58,20 +59,21 @@ int main(int argc, char const *argv[])
               if (pid == 0)
               {
                 strcpy(exeFile, "./");
-                strcat(exeFile, nodeJob.job.exeFile);
-                execl(exeFile, nodeJob.job.exeFile, NULL);            
+                strcat(exeFile, nodeJobExecution.job.exeFile);
+                execl(exeFile, nodeJobExecution.job.exeFile, NULL);            
               }
             }
             
             /* Sets statistics values */
-            nodeJob.job.nodeId = processManagerId;
-            nodeJob.job.nodePid = getpid();
-            nodeJob.job.jobPid = pid;
-            nodeJob.job.startTime = time (NULL);
+            nodeJobExecution.job.nodeId = processManagerId;
+            nodeJobExecution.job.nodePid = getpid();
+            nodeJobExecution.job.jobPid = pid;
+            nodeJobExecution.job.startTime = time (NULL);
             
-            if (nodeJob.destination == -1)
+            if (nodeJobExecution.destination == -1)
             {
-              /* TO DO: Flood message */
+              /* Floods the message */
+              floodNodeMessage(msqid, &nodeJobExecution, topologyId);
             }
           }
           else
@@ -79,18 +81,24 @@ int main(int argc, char const *argv[])
             if (processManagerId == 0)
             {
               /* checks if it is a response from a node */
-              if (isResponse(&nodeJob, &floodTable))
+              if (isResponse(&nodeJobResponses, &floodTable))
               {
+                nodeJobResponses.job.nodeId = nodeJobResponses.source;
+                
                 /* Send response to scheduler (mtype 777) */
+                createMessage(msqid, &nodeJobResponses.job, 777);
               }
             } 
           }
         }
         else
         {
-          if (isResponse(&nodeJob, &floodTable))
+          if (isResponse(&nodeJobResponses, &floodTable))
           {
-            /* TO DO: Flood message */
+            nodeJobResponses.job.nodeId = processManagerId;
+
+            /* Floods the message */
+            floodNodeMessage(msqid, &nodeJobResponses, topologyId);
           }
         }          
           // Check message (nodeJob), if new (checking the nodeJob->job.jobOrder, using function
@@ -105,31 +113,37 @@ int main(int argc, char const *argv[])
       {
         /* Check if job has finished, with nonblocking wait function */
         /* if it has finished, set statistics and send it to node 0 */
-        //printf("MYPID: %d, CHILD PID: %d\n", getpid(), pid);
         if (waitpid(pid, &status_ptr, WUNTRACED) == pid)
         {
           if (&status_ptr != NULL)
           {
             if (WIFEXITED(status_ptr))
             {
-              nodeJob.job.endTime = time (NULL);
+              nodeJobExecution.job.endTime = time (NULL);
+              nodeJobExecution.source = processManagerId;
+              nodeJobExecution.destination = 0;
               isExecutingJob = 0;
+
+              /* REMOVE!!! */
               char buffer[200];
               struct tm* tm_info;
-              tm_info = localtime(&nodeJob.job.startTime);
+              tm_info = localtime(&nodeJobExecution.job.startTime);
               printf("Tempo de inicio: ");
               strftime(buffer, 200, "%Y-%m-%d %H:%M:%S", tm_info);
               puts(buffer);
-              tm_info = localtime(&nodeJob.job.endTime);
+              tm_info = localtime(&nodeJobExecution.job.endTime);
               printf("Tempo de fim: ");
               strftime(buffer, 200, "%Y-%m-%d %H:%M:%S", tm_info);
               puts(buffer);
               printf("\n");
-              /* FLOOD STATISTICS!!!!!!!!!!!!!! */
+              /* REMOVE!!! */
+              
+              /* Floods the message */
+              floodNodeMessage(msqid, &nodeJobExecution, topologyId);
             }
             else
             {
-              printf("Error: Job %d in Node %d returned %d\n", nodeJob.job.jobOrder, processManagerId, status_ptr);
+              printf("Error: Job %d in Node %d returned %d\n", nodeJobExecution.job.jobOrder, processManagerId, status_ptr);
             }       
           }  
         }
@@ -186,7 +200,7 @@ void convertToBinary(char *dest, int source)
   
   memset(dest,0,strlen(dest));
  
-  for (i = 15; i >= 0; i--)
+  for (i = 3; i >= 0; i--)
   {
     k = source >> i;
  
@@ -305,5 +319,26 @@ void getSchedulerMsg(int msqid)
 
 void floodNodeMessage(int msqid, nodeJob *nodeJob, int topology)
 {
+  switch (topology)
+  {
+    /* Hypercube */
+    case 1:
+    /* code */
+      break;
+    
+    /* Torus */
+    case 2:
+    /* code */
+      break;
+    
+    /* Fat_tree */
+    case 3:
+    /* code */
+      break;
   
+    default:
+      printf("Error: Invalid Topology!\n");
+      exit(1);
+      break;
+  }
 }
