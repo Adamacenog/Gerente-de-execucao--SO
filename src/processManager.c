@@ -28,7 +28,7 @@ int main(int argc, char const *argv[])
     /* Receive the node id through args  */
     processManagerId = atoi(argv[1]);
     topologyId =  atoi(argv[2]);
-    printf("PROCESS MANAGER ID: %d TOPOLOGY ID: %d\n", processManagerId, topologyId);
+    //printf("PROCESS MANAGER ID: %d TOPOLOGY ID: %d\n", processManagerId, topologyId);
 
     msqid = queueCreator(key); 
 
@@ -43,7 +43,6 @@ int main(int argc, char const *argv[])
           if (isMessageNew(&nodeJobResponses, &floodTable))
           {
             nodeJobExecution = nodeJobResponses;
-            printf("Node: %d is Executing!\n", processManagerId);
             isExecutingJob = 1;                 
 
             // Checks if fork is created sucessfully
@@ -86,6 +85,7 @@ int main(int argc, char const *argv[])
                 
                 /* Send response to scheduler (mtype 777) */
                 createMessage(msqid, &nodeJobResponses.job, 777);
+                printf("Statistics NodeId: %d, JobOrder: %d\n", nodeJobResponses.job.nodeId, nodeJobResponses.job.jobOrder);
               }
             } 
           }
@@ -98,12 +98,6 @@ int main(int argc, char const *argv[])
             floodNodeMessage(msqid, &nodeJobResponses, processManagerId, topologyId);
           }
         }          
-          // Check message (nodeJob), if new (checking the nodeJob->job.jobOrder, using function
-          // 'isNewMessage'), put on job queue (TO DO) and flood
-          // if message is repeated, discart it completely (don't flood!!).
-
-          // Each node can take a new job after the previous job has finished the execution or
-          // if the node is free (not executing any job)            
       }
 
       if (isExecutingJob)
@@ -121,22 +115,19 @@ int main(int argc, char const *argv[])
               nodeJobExecution.destination = 0;
               isExecutingJob = 0;
 
-              /* REMOVE!!! */
-              char buffer[200];
-              struct tm* tm_info;
-              tm_info = localtime(&nodeJobExecution.job.startTime);
-              printf("Tempo de inicio: ");
-              strftime(buffer, 200, "%Y-%m-%d %H:%M:%S", tm_info);
-              puts(buffer);
-              tm_info = localtime(&nodeJobExecution.job.endTime);
-              printf("Tempo de fim: ");
-              strftime(buffer, 200, "%Y-%m-%d %H:%M:%S", tm_info);
-              puts(buffer);
-              printf("\n");
-              /* REMOVE!!! */
-              
-              /* Floods the message */
-              floodNodeMessage(msqid, &nodeJobExecution, processManagerId, topologyId);
+              if (processManagerId != 0)
+              {
+                /* Floods the message */
+                floodNodeMessage(msqid, &nodeJobExecution, processManagerId, topologyId);
+              }
+              else
+              {
+                nodeJobResponses.job.nodeId = 0;
+                
+                /* Sends zero response to scheduler (mtype 777) */
+                createMessage(msqid, &nodeJobExecution.job, 777);
+                printf("Statistics NodeId: %d, JobOrder: %d\n", nodeJobExecution.job.nodeId, nodeJobExecution.job.jobOrder);
+              }             
             }
             else
             {
@@ -157,23 +148,6 @@ int main(int argc, char const *argv[])
         getSchedulerMsg(msqid);
       }
     }
-
-      /* Idea: convert processManagerId to binary, then check which nodes
-      are its neibourghs. Flood the message to them, adding to your node list the
-      message unique ID, and after that, start within a infinite loop to hear from the 
-      queue if there are any messages there.
-
-
-      list:
-      int nodes[16] = 0;  // 0 means the node has never sent back this ID, 1 means
-                          // that the node already has sent the statistics table back
-                          // (trying to communicate to node 0).
-      int UniqueID = ####;
-
-      // message: destination, source, message (jobId...)
-
-      */ 
-
   }     
   else 
   { 
@@ -293,11 +267,11 @@ void getSchedulerMsg(int msqid)
   /* Checks if threre are any new message from scheduler (mtype = 555) */
   if (receiveMessage(msqid, &job, 555))
   {
-    printf("Received from scheduler!!\n");
     /* Node 0 receives the message, and converts it to the nodes message 'language' */
     
     nodeJob.destination = -1;
     nodeJob.source = 0;
+    nodeJob.job.nodeId = 0;
     nodeJob.job = job;
     
     sendNodeMessage(msqid, &nodeJob, 1);

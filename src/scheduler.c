@@ -15,7 +15,6 @@ Guilherme Lopes. - mat. 15/0128215
 int msqid;
 struct JobQueue *jobQueueHead = NULL;
 struct JobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NULL, *job2ExecuteHead = NULL, *job2ExecuteTail = NULL;
-struct Job *jobEntry, *jobExit;
 
 int main(int argc, char *argv[])
 {
@@ -98,13 +97,6 @@ int main(int argc, char *argv[])
     }
 
     jobCounter = 1;
-    jobEntry = (job *)malloc(sizeof(job));
-
-    if (jobEntry == NULL)
-    {
-      printf("Error on malloc.");
-      exit(1);
-    }
 
     while (1)
     {
@@ -124,11 +116,12 @@ int main(int argc, char *argv[])
 void runScheduler(int msqid, int *jobCounter, int *busyNodes)
 {
   int alarmRemaining;
+  struct Job jobEntry, jobExit;
 
   /* Checks if there are any new jobs to be delayed/executed - sent by delayedMulti-ProcessExecution */
-  if (receiveMessage(msqid, jobEntry, 666))
+  if (receiveMessage(msqid, &jobEntry, 666))
   {
-    (*jobEntry).jobOrder = *jobCounter;
+    jobEntry.jobOrder = *jobCounter;
     alarmRemaining = alarm(0);
     
     if (jobQueueHead != NULL)
@@ -136,7 +129,7 @@ void runScheduler(int msqid, int *jobCounter, int *busyNodes)
       decreaseAllRemainingTimes(jobQueueHead, ((*jobQueueHead).remainingSeconds) - alarmRemaining);
     }    
     
-    addToQueue(&jobQueueHead, (*jobEntry));
+    addToQueue(&jobQueueHead, jobEntry);
     printf("\nQueue:\n");
     printfJobToExecute(jobQueueHead);
     printf("\n");
@@ -158,9 +151,9 @@ void runScheduler(int msqid, int *jobCounter, int *busyNodes)
   }
 
   /* Checks messages from node 0 */
-  if (receiveMessage(msqid, jobExit, 777))
+  if (receiveMessage(msqid, &jobExit, 777))
   {
-    addToJobTable(&finishedJobTableHead, &finishedJobTableTail, *jobExit); 
+    addToJobTable(&finishedJobTableHead, &finishedJobTableTail, jobExit); 
     *busyNodes -= 1; // Each new message from node 0 represents a node that is free
   }
 
@@ -169,7 +162,7 @@ void runScheduler(int msqid, int *jobCounter, int *busyNodes)
     if (job2ExecuteHead != NULL)
     {
       *busyNodes = 16;
-      printf("EXECUTING JOB %d\n", (*job2ExecuteHead).job.jobOrder);
+      //printf("EXECUTING JOB %d\n", (*job2ExecuteHead).job.jobOrder);
       
       /* Message is created and sent to node 0 (using mtype 555) */
       createMessage(msqid, &((*job2ExecuteHead).job), 555);
@@ -237,9 +230,6 @@ void terminateScheduler(int sig)
 
   // Delete the message queue
   queueDestroy(msqid);
-
-  free(jobEntry);
-  free(jobExit);
 
   exit(0);
 }
