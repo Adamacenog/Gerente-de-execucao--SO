@@ -25,25 +25,33 @@ int main(int argc, char const *argv[])
   { 
     /* Ends if it receives a SIGTERM */
     signal(SIGTERM, endExecution); 
-    /* Receive the node id through args  */
+
+    /* Receive the node id and topology id through args  */
     processManagerId = atoi(argv[1]);
     topologyId =  atoi(argv[2]);
-    //printf("PROCESS MANAGER ID: %d TOPOLOGY ID: %d\n", processManagerId, topologyId);
 
+    /* Gets the queue msqid according to the key */
     msqid = queueCreator(key); 
 
+    /* Sets the flood table to its start values */
     eraseFloodTable(&floodTable);
 
     while (1)
     {
+      /* Receives a message sent from a node, using the topology route */
       if (receiveNodeMessage(msqid, &nodeJobResponses, (processManagerId + 1)))
       {
+        /* Checks if the message is to everyone (-1) or to the current node id */
         if (nodeJobResponses.destination == -1 || nodeJobResponses.destination == processManagerId)
         {
+          /* Checks if the message is new. If it is, it executes it. If its not, it ignores it */
           if (isMessageNew(&nodeJobResponses, &floodTable))
           {
+            /* Copies the response struct to the execution struct, to save the execution values */
             nodeJobExecution = nodeJobResponses;
-            isExecutingJob = 1;                 
+
+            /* Set the node as busy */
+            isExecutingJob = 1;   
 
             // Checks if fork is created sucessfully
             if ((pid = fork()) < 0)
@@ -68,6 +76,7 @@ int main(int argc, char const *argv[])
             nodeJobExecution.job.jobPid = pid;
             nodeJobExecution.job.startTime = time (NULL);
             
+            /* Checks if message was meant to everyone */
             if (nodeJobExecution.destination == -1)
             {
               /* Floods the message */
@@ -76,22 +85,24 @@ int main(int argc, char const *argv[])
           }
           else
           {
+            /* If it is not a new message, then the node 0 needs to check if it is a response from another node sending its statistics */
             if (processManagerId == 0)
             {
               /* checks if it is a response from a node */
               if (isResponse(&nodeJobResponses, &floodTable))
               {
+                /* If it is a response, restores the original node id (using the message source) */
                 nodeJobResponses.job.nodeId = nodeJobResponses.source;
                 
                 /* Send response to scheduler (mtype 777) */
                 createMessage(msqid, &nodeJobResponses.job, 777);
-                printf("Statistics NodeId: %d, JobOrder: %d\n", nodeJobResponses.job.nodeId, nodeJobResponses.job.jobOrder);
               }
             } 
           }
         }
         else
         {
+          /* If the message is not to everyone and the destination is not the current node, checks if it is a statistics response from a node */
           if (isResponse(&nodeJobResponses, &floodTable))
           {
             /* Floods the message */
@@ -102,29 +113,34 @@ int main(int argc, char const *argv[])
 
       if (isExecutingJob)
       {
-        /* Check if job has finished, with nonblocking wait function */
+        /* Check if job has finished executing, with nonblocking wait function */
         /* if it has finished, set statistics and send it to node 0 */
         if (waitpid(pid, &status_ptr, WUNTRACED) == pid)
         {
+          /* Macro to analyse the return value from the child execution */
           if (WIFEXITED(status_ptr))
           {
+            /* Sets the statistics final values */
             nodeJobExecution.job.endTime = time (NULL);
             nodeJobExecution.source = processManagerId;
             nodeJobExecution.destination = 0;
+
+            /* Sets the node as free */
             isExecutingJob = 0;
 
+            /* Checks if execution node was node 0 */
             if (processManagerId != 0)
             {
-              /* Floods the message */
+              /* If it is not node 0, Floods the message */
               floodNodeMessage(msqid, &nodeJobExecution, processManagerId, topologyId);
             }
             else
             {
+              /* if it is node 0, it sends the statistics directly to scheduler */
               nodeJobResponses.job.nodeId = 0;
               
               /* Sends zero response to scheduler (mtype 777) */
               createMessage(msqid, &nodeJobExecution.job, 777);
-              printf("Statistics NodeId: %d, JobOrder: %d\n", nodeJobExecution.job.nodeId, nodeJobExecution.job.jobOrder);
             }             
           }
           else
@@ -141,7 +157,7 @@ int main(int argc, char const *argv[])
       
       if (processManagerId == 0)
       {
-        /* Checks if threre are any new message from scheduler */
+        /* Checks if there are any new message from scheduler */
         getSchedulerMsg(msqid);
       }
     }
@@ -161,7 +177,7 @@ void endExecution(int sig)
   exit(0);
 }
 
-/* convertToBinary function converts a string to binary */
+/* convertToBinary function converts a int to a binary int array */
 void convertToBinary(int *dest, int source)
 {
   int i, k;
@@ -179,11 +195,13 @@ void convertToBinary(int *dest, int source)
   }
 }
 
+/* convertFromBinary2Int function converts a binary int array to a int */
 void convertFromBinary2Int(int *dest, int *source)
 {
   *dest = source[0] + source[1]*2 + source[2]*4 + source[3]*8;
 }
 
+/* isMessageNew checks if node has received a new message */
 int isMessageNew(nodeJob *nodeJob, floodTable *floodTable)
 {              
   if (floodTable->uniqueId == nodeJob->job.jobOrder && floodTable->wasExecuted == 0)
@@ -203,6 +221,7 @@ int isMessageNew(nodeJob *nodeJob, floodTable *floodTable)
   return 0;
 }
 
+/* isResponse checks if the message that node has received is anothers node response */
 int isResponse(nodeJob *nodeJob,floodTable *floodTable)
 {
   if (floodTable->nodesResponse[nodeJob->source] == 0)
@@ -221,6 +240,7 @@ int isResponse(nodeJob *nodeJob,floodTable *floodTable)
   return 0;
 }
 
+/* receiveNodeMessage receives a node message and put it in nodeJob struct, returning 1 when there is a new message and 0 when there is no new message */
 int receiveNodeMessage(int msqid, nodeJob *nodeJob, int nodeId)
 {
   struct msgbuf bufReceive;
@@ -246,6 +266,7 @@ int receiveNodeMessage(int msqid, nodeJob *nodeJob, int nodeId)
   return 0;
 }
 
+/* sets the flood table to its default values */
 void eraseFloodTable(floodTable *floodTable)
 {
   floodTable->wasExecuted = 0;
@@ -255,6 +276,7 @@ void eraseFloodTable(floodTable *floodTable)
     floodTable->nodesResponse[i] = 0;
 }
 
+/* Gets the message sent from scheduler - Only node 0 can call this function - */
 void getSchedulerMsg(int msqid)
 {
   struct Job job;
@@ -275,6 +297,7 @@ void getSchedulerMsg(int msqid)
   }
 }
 
+/* Sends the message 'nodeJob' from node source to node destination */
 void sendNodeMessage(int msqid, struct NodeJob *nodejob, long mtype)
 {
   struct msgbuf buf; 
@@ -302,6 +325,7 @@ void sendNodeMessage(int msqid, struct NodeJob *nodejob, long mtype)
   messageSend(msqid, buf, (strlen(buf.mtext) + 1));
 }
 
+/* Floods the message from one node to all nodes, in a clever way, according to the topology selected by the user */
 void floodNodeMessage(int msqid, nodeJob *nodeJob, int processManagerId, int topology)
 {
   int whoSent = nodeJob->job.nodeId, binaryAddr[4], i, adjacentNode[4], sendValue;

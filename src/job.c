@@ -148,10 +148,14 @@ void printfJobTable(jobTable *jobTableHead)
     while(jobTableHead != NULL)
     {
         printf("---------------------------\n");
-        printf("jobOrder: %d\n", jobTableHead->job.jobOrder);
+        printf("Node id: %d\n", jobTableHead->job.nodeId);
+        printf("Node pid: %d\n", jobTableHead->job.nodePid);
+        printf("Delayed pid: %d\n", jobTableHead->job.delayedPid);
+        printf("Job pid: %d\n", jobTableHead->job.jobPid);
+        printf("Job order: %d\n", jobTableHead->job.jobOrder);
         printf("Seconds: %d\n", jobTableHead->job.seconds);
-        printf("StartTime: %ld\n", jobTableHead->job.startTime);
-        printf("EndTime: %ld\n", jobTableHead->job.endTime);
+        printf("StartTime: %s", ctime (&jobTableHead->job.startTime));
+        printf("EndTime: %s", ctime (&jobTableHead->job.endTime));
         printf("ExeFile: %s\n", jobTableHead->job.exeFile);
         jobTableHead = jobTableHead->nextTable;
     }
@@ -164,7 +168,11 @@ void printfJobToExecute(jobQueue *jobHead)
     {
         printf("---------------------------\n");
         printf("Remaining seconds: %d\n", jobHead->remainingSeconds);
-        printf("jobOrder: %d\n", jobHead->job.jobOrder);
+        printf("Node id: %d\n", jobHead->job.nodeId);
+        printf("Node pid: %d\n", jobHead->job.nodePid);
+        printf("Delayed pid: %d\n", jobHead->job.delayedPid);
+        printf("Job pid: %d\n", jobHead->job.jobPid);
+        printf("Job order: %d\n", jobHead->job.jobOrder);
         printf("Seconds: %d\n", jobHead->job.seconds);
         printf("StartTime: %ld\n", jobHead->job.startTime);
         printf("EndTime: %ld\n", jobHead->job.endTime);

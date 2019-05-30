@@ -18,7 +18,7 @@ struct JobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NULL, *job
 
 int main(int argc, char *argv[])
 {
-  int i, busyTable[16], jobCounter, topologyType = -1;
+  int i, jobCounter, topologyType = -1;
   char *topology, jobIdString[10], topologyString[10];
   key_t key = 7869;
 
@@ -75,8 +75,6 @@ int main(int argc, char *argv[])
       /* Creates N process that will execute the process manager logic */
       for (i = 0; i < nodesSize; i++)
       {
-        busyTable[i] = 0;
-
         // Checks if fork is created sucessfully
         if ((pid[i] = fork()) < 0)
         {
@@ -131,7 +129,7 @@ void runScheduler(int msqid, int *jobCounter)
     }    
     
     addToQueue(&jobQueueHead, jobEntry);
-    printf("\nQueue:\n");
+    printf("\nDelayed job queue:\n");
     printfJobToExecute(jobQueueHead);
     printf("\n");
 
@@ -163,7 +161,7 @@ void runScheduler(int msqid, int *jobCounter)
     if (job2ExecuteHead != NULL)
     {
       busyNodes = nodesSize;
-      //printf("EXECUTING JOB %d\n", (*job2ExecuteHead).job.jobOrder);
+      printf("EXECUTING JOB %d\n", (*job2ExecuteHead).job.jobOrder);
       
       /* Message is created and sent to node 0 (using mtype 555) */
       createMessage(msqid, &((*job2ExecuteHead).job), 555);
@@ -177,7 +175,6 @@ void delayedMessageSend(int sig)
 {
   if (jobQueueHead != NULL)
   {
-    printf("ALARM INTERRUPT\n");
     decreaseAllRemainingTimes(jobQueueHead, (*jobQueueHead).remainingSeconds);
     
     while (jobQueueHead != NULL && (*jobQueueHead).remainingSeconds <= 0)
