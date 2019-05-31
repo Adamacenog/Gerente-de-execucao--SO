@@ -29,7 +29,7 @@ int main(int argc, char const *argv[])
     /* Receive the node id and topology id through args  */
     processManagerId = atoi(argv[1]);
     topologyId =  atoi(argv[2]);
-
+    
     /* Gets the queue msqid according to the key */
     msqid = queueCreator(key); 
 
@@ -539,13 +539,81 @@ void floodNodeMessage(int msqid, nodeJob *nodeJob, int processManagerId, int top
     
     /* Fat_tree */
     case 3:
-    /* code */
-      break;
-  
-    default:
-      printf("Error: Invalid Topology!\n");
-      exit(1);
-      break;
+      switch (processManagerId)
+      {
+        case 0:
+          assignVector(neighbours, 1, 2, -1, -1);
+          break;
+          
+        case 1:
+          assignVector(neighbours, 0, 3, 4, -1);
+          break;
+        
+        case 2:
+          assignVector(neighbours, 0, 5, 6, -1);
+          break;
+      
+        case 3:
+          assignVector(neighbours, 1, 7, 8, -1);
+          break;
+
+        case 4:
+          assignVector(neighbours, 1, 9, 10, -1);
+          break;
+
+        case 5:
+          assignVector(neighbours, 2, 11, 12, -1);
+          break;
+
+        case 6:
+          assignVector(neighbours, 2, 13, 14, -1);
+          break;
+
+        case 7:
+          assignVector(neighbours, 3, -1, -1, -1);
+          break;
+
+        case 8:
+          assignVector(neighbours, 3, -1, -1, -1);
+          break;
+
+        case 9:
+          assignVector(neighbours, 4, -1, -1, -1);
+          break;
+
+        case 10:
+          assignVector(neighbours, 4, -1, -1, -1);
+          break;
+
+        case 11:
+          assignVector(neighbours, 5, -1, -1, -1);
+          break;
+
+        case 12:
+          assignVector(neighbours, 5, -1, -1, -1);
+          break;
+
+        case 13:
+          assignVector(neighbours, 6, -1, -1, -1);
+          break;
+
+        case 14:
+          assignVector(neighbours, 6, -1, -1, -1);
+          break;
+
+        default:
+          printf("Error: Unknown behaviour ¯\\_(ツ)_/¯!\n");
+          break;
+      }    
+
+      for (i = 0; i < 3; i++)
+      {
+        if (whoSent != neighbours[i] && neighbours[i] != -1)
+        {
+          /* Send the message with mtype neighbours[i] */
+          sendNodeMessage(msqid, nodeJob, (neighbours[i] + 1));
+        }
+      }
   }
 }
 
