@@ -41,30 +41,22 @@ void addToQueue(jobQueue **jobHead, job job)
     }
     else
     {
-        aux2 = (*jobHead);
-        aux3 = aux2;
-
-        while(aux2->next != NULL && aux2->remainingSeconds < job.seconds)
+        if ((*jobHead)->remainingSeconds > job.seconds)
         {
-            aux3 = aux2;
-            aux2 = aux2->next;
-        }
-
-        if (aux2 == (*jobHead))
-        {
-            if (aux2->remainingSeconds > job.seconds)
-            {
-                aux->next = (*jobHead);
-                (*jobHead) = aux;
-            }
-            else
-            {
-                aux->next = (*jobHead)->next;
-                (*jobHead)->next = aux;
-            }            
+            aux->next = (*jobHead);
+            (*jobHead) = aux;
         }
         else
         {
+            aux2 = (*jobHead);
+            aux3 = aux2;
+
+            while(aux2->next != NULL && aux2->remainingSeconds <= job.seconds)
+            {
+                aux3 = aux2;
+                aux2 = aux2->next;
+            }
+
             if (aux2->remainingSeconds > job.seconds)
             {
                 aux->next = aux2;
@@ -73,7 +65,7 @@ void addToQueue(jobQueue **jobHead, job job)
             else
             {
                 aux2->next = aux;
-            } 
+            }            
         }
     }
 }
