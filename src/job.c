@@ -143,23 +143,9 @@ void printfJobTable(jobTable *jobTableHead)
     while(jobTableHead != NULL)
     {
         printf("---------------------------\n");
-        printf("Node id: %d\n", jobTableHead->job.nodeId);
-        printf("Node pid: %d\n", jobTableHead->job.nodePid);
-        printf("Delayed pid: %d\n", jobTableHead->job.delayedPid);
-        printf("Job pid: %d\n", jobTableHead->job.jobPid);
         printf("Job order: %d\n", jobTableHead->job.jobOrder);
-        printf("Total seconds waited: %d\n", jobTableHead->job.seconds);
-        printf("StartTime: %s", ctime (&jobTableHead->job.startTime));
-        
-        if (jobTableHead->job.endTime != -1)
-        {
-            printf("EndTime: %s", ctime (&jobTableHead->job.endTime));
-        }
-        else
-        {
-            printf("Process did not finish execution, EndTime is not set!\n");
-        }       
-        
+        printf("Requesting process pid: %d\n", jobTableHead->job.delayedPid);
+        printf("Total seconds waited: %d\n", jobTableHead->job.seconds);       
         printf("ExeFile: %s\n", jobTableHead->job.exeFile);
         jobTableHead = jobTableHead->nextTable;
     }
@@ -171,23 +157,59 @@ void printfJobToExecute(jobQueue *jobHead)
     while(jobHead != NULL)
     {
         printf("---------------------------\n");
-        printf("Remaining seconds: %d\n", jobHead->remainingSeconds);
-        printf("Delayed pid: %d\n", jobHead->job.delayedPid);
         printf("Job order: %d\n", jobHead->job.jobOrder);
-        printf("Total seconds to wait: %d\n", jobHead->job.seconds);
+        printf("Requesting process pid: %d\n", jobHead->job.delayedPid);
+        printf("Remaining seconds to wait: %d\n", jobHead->remainingSeconds);
+        printf("Total seconds requested to wait: %d\n", jobHead->job.seconds);
         printf("ExeFile: %s\n", jobHead->job.exeFile);
         jobHead = jobHead->next;
     }
     printf("---------------------------\n");
 }
 
-void removeJobHead(jobTable **jobTableHead)
+void printfJobStatistics(jobTable *jobTableHead, jobTable *jobTableTail)
 {
     jobTable *aux;
-    if (jobTableHead != NULL)
+    aux = jobTableHead;
+    int hasEnded = 1;
+
+    while (aux != NULL)
+    {
+        if (aux->job.endTime == -1)
+            hasEnded = 0;
+
+        aux = aux->nextTable;
+    }
+
+    printf("---------------------------------------------------------------------------------------------------------------------------------\n");
+    printf("|Job: %d  |  Requesting process pid: %d  |  File: %s  |  Delay: %d  |  makespan:", jobTableHead->job.jobOrder, jobTableHead->job.delayedPid, jobTableHead->job.exeFile, jobTableHead->job.seconds);
+
+    if (hasEnded == 1)
+    {
+        printf(" %ld  |  Fastest node: %d  |  Slowest node: %d\n",(jobTableTail->job.endTime - jobTableHead->job.startTime), jobTableHead->job.nodeId, jobTableTail->job.nodeId);
+        printf("|Minimum startTime: %s", ctime(&jobTableHead->job.startTime));
+        printf("|Maximum endTime: %s", ctime(&jobTableTail->job.endTime));
+    }
+    else
+    {
+        printf(" - not every node ended the execution!\n");
+    }   
+
+    printf("---------------------------------------------------------------------------------------------------------------------------------\n");
+}
+
+void removeJobHead(jobTable **jobTableHead, jobTable **jobTableTail)
+{
+    jobTable *aux;
+    if ((*jobTableHead) != NULL)
     {
         aux = (*jobTableHead);
         (*jobTableHead) = (*jobTableHead)->nextTable;
         free(aux);
+
+        if ((*jobTableHead) == NULL)
+        {
+            (*jobTableTail) = NULL;
+        }
     }
 }

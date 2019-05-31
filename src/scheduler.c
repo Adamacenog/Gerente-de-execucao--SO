@@ -40,8 +40,6 @@ int main(int argc, char *argv[])
     for (i = 0; i < sizeof(argv[1]) + 1; i++)
       *(topology + i) = tolower(*(topology + i));
 
-    printf("%s\n", topology);
-
     /* general process scheduler */
 
     if (strcmp(topology, "hypercube") == 0)
@@ -154,11 +152,11 @@ void runScheduler(int msqid, int *jobCounter)
     if (job2ExecuteHead != NULL)
     {
       busyNodes = nodesSize;
-      printf("EXECUTING JOB %d\n", (*job2ExecuteHead).job.jobOrder);
+      printf("\nEXECUTING JOB: %d\n\n", (*job2ExecuteHead).job.jobOrder);
       
       /* Message is created and sent to node 0 (using mtype 555) */
       createMessage(msqid, &((*job2ExecuteHead).job), 555);
-      removeJobHead(&job2ExecuteHead);
+      removeJobHead(&job2ExecuteHead, &job2ExecuteTail);
     }
   }
 
@@ -167,6 +165,13 @@ void runScheduler(int msqid, int *jobCounter)
   {
     addToJobTable(&finishedJobTableHead, &finishedJobTableTail, jobExit); 
     busyNodes -= 1; // Each new message from node 0 represents a node that is free
+
+    if (busyNodes == 0)
+    {
+      printf("\nJob %d ended its execution!\n\nStatistics:\n\n", finishedJobTableHead->job.jobOrder);
+      printfJobStatistics(finishedJobTableHead, finishedJobTableTail);
+      deleteJobTable(&finishedJobTableHead,&finishedJobTableTail);
+    }
   }
 }
 
@@ -218,12 +223,17 @@ void terminateScheduler(int sig)
         busyNodes -= 1; // Each new message from node 0 represents a node that is free
       }
     }
+
+    printf("\nJob %d was forced to end its execution!\n\nStatistics:\n\n", finishedJobTableHead->job.jobOrder);
+    printfJobStatistics(finishedJobTableHead, finishedJobTableTail);
+    deleteJobTable(&finishedJobTableHead,&finishedJobTableTail);
+
     killAllNodes();
   }  
   
   if (jobQueueHead != NULL)
   {
-    printf("Jobs that were waiting to start the execution:\n");
+    printf("\nJobs that were still waiting to start the execution:\n");
     printfJobToExecute(jobQueueHead);
     deleteQueue(&jobQueueHead);
   }
@@ -234,19 +244,6 @@ void terminateScheduler(int sig)
     printf("Jobs that were ready to execute, waiting for the nodes to be free:\n");
     printfJobTable(job2ExecuteHead);
     deleteJobTable(&job2ExecuteHead, &job2ExecuteTail);
-  }
-
-  printf("\n\n");
-  printf("Nodes statistics execution table:\n");
-
-  if (finishedJobTableHead != NULL)
-  {
-    printfJobTable(finishedJobTableHead);
-    deleteJobTable(&finishedJobTableHead, &finishedJobTableTail);
-  }
-  else
-  {
-    printf("No jobs were executed!\n");
   }
 
   // Delete the message queue

@@ -54,4 +54,5 @@ void addToJobTable(jobTable **, jobTable **, job);
 void printfJobToExecute(jobQueue *);
 void printfJobTable(jobTable *);
 void deleteJobTable(jobTable **, jobTable **);
-void removeJobHead(jobTable **);
+void removeJobHead(jobTable **, jobTable **);
+void printfJobStatistics(jobTable *, jobTable *);

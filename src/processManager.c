@@ -56,17 +56,10 @@ int main(int argc, char const *argv[])
               perror("kill");
             }
 
-            if (waitpid(pid, &status_ptr, WUNTRACED) == pid)
-            {
-              if (!WIFEXITED(status_ptr))
-              {
-                printf("Error, node child (program being executed) did not finish correctly!\n");
-              }               
-            }
-            else
+            if (!(waitpid(pid, &status_ptr, WUNTRACED) == pid))
             {
               printf("Execution Error.\n");
-              perror("waitpid");
+              perror("waitpid");      
             }
 
             /* Sets the statistics final values */
