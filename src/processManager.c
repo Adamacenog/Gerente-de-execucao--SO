@@ -41,72 +41,133 @@ int main(int argc, char const *argv[])
       /* Receives a message sent from a node, using the topology route */
       if (receiveNodeMessage(msqid, &nodeJobResponses, (processManagerId + 1)))
       {
-        /* Checks if the message is to everyone (-1) or to the current node id */
-        if (nodeJobResponses.destination == -1 || nodeJobResponses.destination == processManagerId)
+        /* Checks if message is a soft kill sent from scheduler */
+        if (nodeJobResponses.job.jobOrder == -1 && floodTable.terminate == 0)
         {
-          /* Checks if the message is new. If it is, it executes it. If its not, it ignores it */
-          if (isMessageNew(&nodeJobResponses, &floodTable))
+          /* Sets terminate */
+          floodTable.terminate = 1;
+
+          if (isExecutingJob)
           {
-            /* Copies the response struct to the execution struct, to save the execution values */
-            nodeJobExecution = nodeJobResponses;
-
-            /* Set the node as busy */
-            isExecutingJob = 1;   
-
-            // Checks if fork is created sucessfully
-            if ((pid = fork()) < 0)
+            // Kill child process
+            if (kill(pid,SIGTERM) == -1)
             {
-              printf("Error while creating execution node.\n");
-              perror("fork");
-              exit(1);
+              printf("Error while sending signal.\n");
+              perror("kill");
+            }
+
+            if (waitpid(pid, &status_ptr, WUNTRACED) == pid)
+            {
+              if (!WIFEXITED(status_ptr))
+              {
+                printf("Error, node child (program being executed) did not finish correctly!\n");
+              }               
             }
             else
             {
-              // Checks whether it is processes father (pid != 0) or child (pid == 0)
-              if (pid == 0)
+              printf("Execution Error.\n");
+              perror("waitpid");
+            }
+
+            /* Sets the statistics final values */
+            nodeJobExecution.job.endTime = -1;
+            nodeJobExecution.source = processManagerId;
+            nodeJobExecution.destination = 0;
+
+            /* Sets the node as free */
+            isExecutingJob = 0;
+
+            /* Checks if execution node was node 0 */
+            if (processManagerId != 0)
+            {
+              /* If it is not node 0, Floods the message */
+              floodNodeMessage(msqid, &nodeJobExecution, processManagerId, topologyId);
+            }
+            else
+            {
+              /* if it is node 0, it sends the statistics directly to scheduler */
+              nodeJobExecution.job.nodeId = 0;
+              
+              /* Sends zero response to scheduler (mtype 777) */
+              createMessage(msqid, &nodeJobExecution.job, 777);
+            }
+          }
+
+          /* Floods the message */
+          floodNodeMessage(msqid, &nodeJobResponses, processManagerId,topologyId);
+        }
+        else
+        {
+          /* Checks if the message is to everyone (-1) or to the current node id */
+          if (nodeJobResponses.job.jobOrder != -1 && (nodeJobResponses.destination == -1 || nodeJobResponses.destination == processManagerId))
+          {
+            /* Checks if the message is new. If it is, it executes it. If its not, it ignores it */
+            if (isExecutingJob == 0 && isMessageNew(&nodeJobResponses, &floodTable))
+            {
+              /* Copies the response struct to the execution struct, to save the execution values */
+              nodeJobExecution = nodeJobResponses;
+
+              /* Set the node as busy */
+              isExecutingJob = 1;   
+
+              // Checks if fork is created sucessfully
+              if ((pid = fork()) < 0)
               {
-                strcpy(exeFile, "./");
-                strcat(exeFile, nodeJobExecution.job.exeFile);
-                execl(exeFile, nodeJobExecution.job.exeFile, NULL);            
+                printf("Error while creating execution node.\n");
+                perror("fork");
+                exit(1);
+              }
+              else
+              {
+                // Checks whether it is processes father (pid != 0) or child (pid == 0)
+                if (pid == 0)
+                {
+                  strcpy(exeFile, "./");
+                  strcat(exeFile, nodeJobExecution.job.exeFile);
+                  execl(exeFile, nodeJobExecution.job.exeFile, NULL);            
+                }
+              }
+              
+              /* Sets statistics values */
+              nodeJobExecution.job.nodePid = getpid();
+              nodeJobExecution.job.jobPid = pid;
+              nodeJobExecution.job.startTime = time (NULL);
+              
+              /* Checks if message was meant to everyone */
+              if (nodeJobExecution.destination == -1)
+              {
+                /* Floods the message */
+                floodNodeMessage(msqid, &nodeJobExecution, processManagerId,topologyId);
               }
             }
-            
-            /* Sets statistics values */
-            nodeJobExecution.job.nodePid = getpid();
-            nodeJobExecution.job.jobPid = pid;
-            nodeJobExecution.job.startTime = time (NULL);
-            
-            /* Checks if message was meant to everyone */
-            if (nodeJobExecution.destination == -1)
+            else
             {
-              /* Floods the message */
-              floodNodeMessage(msqid, &nodeJobExecution, processManagerId,topologyId);
+              /* If it is not a new message, then the node 0 needs to check if it is a response from another node sending its statistics */
+              if (processManagerId == 0)
+              {
+                /* checks if it is a response from a node */
+                if (isResponse(&nodeJobResponses, &floodTable))
+                {
+                  /* If it is a response, restores the original node id (using the message source) */
+                  nodeJobResponses.job.nodeId = nodeJobResponses.source;
+                  
+                  /* Send response to scheduler (mtype 777) */
+                  createMessage(msqid, &nodeJobResponses.job, 777);
+                }
+              } 
             }
           }
           else
           {
-            /* If it is not a new message, then the node 0 needs to check if it is a response from another node sending its statistics */
-            if (processManagerId == 0)
+            if (nodeJobResponses.job.jobOrder != -1)
             {
-              /* checks if it is a response from a node */
+              /* If the message is not to everyone and the destination is not the current node, checks if it is a statistics response from a node */
               if (isResponse(&nodeJobResponses, &floodTable))
               {
-                /* If it is a response, restores the original node id (using the message source) */
-                nodeJobResponses.job.nodeId = nodeJobResponses.source;
-                
-                /* Send response to scheduler (mtype 777) */
-                createMessage(msqid, &nodeJobResponses.job, 777);
+                /* Floods the message */
+                floodNodeMessage(msqid, &nodeJobResponses, processManagerId, topologyId);
               }
-            } 
-          }
-        }
-        else
-        {
-          /* If the message is not to everyone and the destination is not the current node, checks if it is a statistics response from a node */
-          if (isResponse(&nodeJobResponses, &floodTable))
-          {
-            /* Floods the message */
-            floodNodeMessage(msqid, &nodeJobResponses, processManagerId, topologyId);
+            }
           }
         }          
       }
@@ -115,7 +176,7 @@ int main(int argc, char const *argv[])
       {
         /* Check if job has finished executing, with nonblocking wait function */
         /* if it has finished, set statistics and send it to node 0 */
-        if (waitpid(pid, &status_ptr, WUNTRACED) == pid)
+        if (waitpid(pid, &status_ptr, WNOHANG) == pid)
         {
           /* Macro to analyse the return value from the child execution */
           if (WIFEXITED(status_ptr))
@@ -150,8 +211,11 @@ int main(int argc, char const *argv[])
         }
         else
         {
-          printf("Execution Error.\n");
-          perror("waitpid");
+          if (errno != 42 && errno != 0)
+          {
+            printf("Execution Error.\n");
+            perror("waitpid");
+          }
         }      
       }
       
@@ -244,18 +308,18 @@ int isResponse(nodeJob *nodeJob,floodTable *floodTable)
 int receiveNodeMessage(int msqid, nodeJob *nodeJob, int nodeId)
 {
   struct msgbuf bufReceive;
-  char auxString[50], pattern[2] = "|";
+  char auxString[AUXSZ], pattern[2] = "|";
 
   /* Receives a msg with mtype # */
   if (messageReceive(msqid, &bufReceive, nodeId, 0))
   {
     /* Cuts the string with the pattern to be parsed and Sets the job values */
-    memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    memset(auxString,0,AUXSZ);
+    copyNremoveByPattern(auxString, AUXSZ, bufReceive.mtext, MSGSZ, *pattern);
     nodeJob->destination = atoi(auxString);
 
-    memset(auxString,0,50);
-    copyNremoveByPattern(auxString, 50, bufReceive.mtext, 500, *pattern);
+    memset(auxString,0,AUXSZ);
+    copyNremoveByPattern(auxString, AUXSZ, bufReceive.mtext, MSGSZ, *pattern);
     nodeJob->source = atoi(auxString);
 
     convertBuf2Job(bufReceive.mtext, &nodeJob->job); 
@@ -271,6 +335,7 @@ void eraseFloodTable(floodTable *floodTable)
 {
   floodTable->wasExecuted = 0;
   floodTable->uniqueId = -1;
+  floodTable->terminate = 0;
 
   for (int i = 0; i < 16; i++)
     floodTable->nodesResponse[i] = 0;
@@ -286,6 +351,8 @@ void getSchedulerMsg(int msqid)
   /* Checks if threre are any new message from scheduler (mtype = 555) */
   if (receiveMessage(msqid, &job, 555))
   {
+    cleanAllRemainingMessages(msqid);
+
     /* Node 0 receives the message, and converts it to the nodes message 'language' */
     
     nodeJob.destination = -1;
@@ -297,20 +364,44 @@ void getSchedulerMsg(int msqid)
   }
 }
 
+void cleanAllRemainingMessages(int msqid)
+{
+  int hasMessage = 1, i, aux = 0;
+  struct NodeJob nodeJobResponses;
+
+  while(hasMessage == 1)
+  {
+    for (i = 1; i < 17; i++)
+    {
+      hasMessage = receiveNodeMessage(msqid, &nodeJobResponses, i);
+
+      if (hasMessage == 0)
+        aux++;
+    }
+
+    if (aux == 16)
+      hasMessage = 0;
+    else
+      hasMessage = 1; 
+
+    aux = 0;   
+  }
+}
+
 /* Sends the message 'nodeJob' from node source to node destination */
 void sendNodeMessage(int msqid, struct NodeJob *nodejob, long mtype)
 {
   struct msgbuf buf; 
-  char auxString[10];
+  char auxString[AUXSZ];
 
   memset(buf.mtext,0,MSGSZ);
-  memset(auxString,0,10);
+  memset(auxString,0,AUXSZ);
 
   /* sets destination */
   sprintf(auxString, "%d", nodejob->destination);
   strcat(buf.mtext, auxString);
   strcat(buf.mtext, "|");
-  memset(auxString,0,10);
+  memset(auxString,0,AUXSZ);
 
   /* sets source */
   sprintf(auxString, "%d", nodejob->source);

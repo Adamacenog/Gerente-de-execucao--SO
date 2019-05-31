@@ -31,7 +31,8 @@ Guilherme Lopes. - mat. 15/0128215
     #include "job.h"
 #endif
 
-#define MSGSZ 500
+#define MSGSZ 20000
+#define AUXSZ 50
 
 // Declare the message structure.
 typedef struct msgbuf

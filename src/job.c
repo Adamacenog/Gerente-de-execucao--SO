@@ -25,6 +25,7 @@ void addToQueue(jobQueue **jobHead, job job)
 
     aux->remainingSeconds = job.seconds;
     aux->job.nodeId = job.nodeId;
+    aux->job.nodePid = job.nodePid;
     aux->job.delayedPid = job.delayedPid;
     aux->job.jobPid = job.jobPid;
     aux->job.jobOrder = job.jobOrder;
@@ -41,6 +42,7 @@ void addToQueue(jobQueue **jobHead, job job)
     else
     {
         aux2 = (*jobHead);
+        aux3 = aux2;
 
         while(aux2->next != NULL && aux2->remainingSeconds < job.seconds)
         {
@@ -57,6 +59,7 @@ void addToQueue(jobQueue **jobHead, job job)
             }
             else
             {
+                aux->next = (*jobHead)->next;
                 (*jobHead)->next = aux;
             }            
         }
@@ -153,9 +156,18 @@ void printfJobTable(jobTable *jobTableHead)
         printf("Delayed pid: %d\n", jobTableHead->job.delayedPid);
         printf("Job pid: %d\n", jobTableHead->job.jobPid);
         printf("Job order: %d\n", jobTableHead->job.jobOrder);
-        printf("Seconds: %d\n", jobTableHead->job.seconds);
+        printf("Total seconds waited: %d\n", jobTableHead->job.seconds);
         printf("StartTime: %s", ctime (&jobTableHead->job.startTime));
-        printf("EndTime: %s", ctime (&jobTableHead->job.endTime));
+        
+        if (jobTableHead->job.endTime != -1)
+        {
+            printf("EndTime: %s", ctime (&jobTableHead->job.endTime));
+        }
+        else
+        {
+            printf("Process did not finish execution, EndTime is not set!\n");
+        }       
+        
         printf("ExeFile: %s\n", jobTableHead->job.exeFile);
         jobTableHead = jobTableHead->nextTable;
     }
@@ -168,14 +180,9 @@ void printfJobToExecute(jobQueue *jobHead)
     {
         printf("---------------------------\n");
         printf("Remaining seconds: %d\n", jobHead->remainingSeconds);
-        printf("Node id: %d\n", jobHead->job.nodeId);
-        printf("Node pid: %d\n", jobHead->job.nodePid);
         printf("Delayed pid: %d\n", jobHead->job.delayedPid);
-        printf("Job pid: %d\n", jobHead->job.jobPid);
         printf("Job order: %d\n", jobHead->job.jobOrder);
-        printf("Seconds: %d\n", jobHead->job.seconds);
-        printf("StartTime: %ld\n", jobHead->job.startTime);
-        printf("EndTime: %ld\n", jobHead->job.endTime);
+        printf("Total seconds to wait: %d\n", jobHead->job.seconds);
         printf("ExeFile: %s\n", jobHead->job.exeFile);
         jobHead = jobHead->next;
     }

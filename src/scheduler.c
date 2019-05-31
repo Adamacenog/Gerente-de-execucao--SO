@@ -19,7 +19,7 @@ struct JobTable *finishedJobTableHead = NULL, *finishedJobTableTail = NULL, *job
 int main(int argc, char *argv[])
 {
   int i, jobCounter, topologyType = -1;
-  char *topology, jobIdString[10], topologyString[10];
+  char *topology, jobIdString[10], topologyString[30];
   key_t key = 7869;
 
   signal(SIGALRM, delayedMessageSend);
@@ -149,13 +149,6 @@ void runScheduler(int msqid, int *jobCounter)
     (*jobCounter)++;
   }
 
-  /* Checks messages from node 0 */
-  if (receiveMessage(msqid, &jobExit, 777))
-  {
-    addToJobTable(&finishedJobTableHead, &finishedJobTableTail, jobExit); 
-    busyNodes -= 1; // Each new message from node 0 represents a node that is free
-  }
-
   if (busyNodes == 0)
   {
     if (job2ExecuteHead != NULL)
@@ -167,6 +160,13 @@ void runScheduler(int msqid, int *jobCounter)
       createMessage(msqid, &((*job2ExecuteHead).job), 555);
       removeJobHead(&job2ExecuteHead);
     }
+  }
+
+  /* Checks messages from node 0 */
+  if (receiveMessage(msqid, &jobExit, 777))
+  {
+    addToJobTable(&finishedJobTableHead, &finishedJobTableTail, jobExit); 
+    busyNodes -= 1; // Each new message from node 0 represents a node that is free
   }
 }
 
@@ -203,8 +203,22 @@ void terminateScheduler(int sig)
   }
   else
   {
-    /* TO DO - SEND SOFT KILL MSG */
+    struct Job job;
+    job.jobOrder = -1;
+   
     /* If there is a node still executing, tell it to stop and send its statistics (endtime comes with -1) */
+    /* Stop message is created and sent to node 0 (using mtype 555) - SOFT KILL MESSAGE */
+    createMessage(msqid, &job, 555);
+    
+    while (busyNodes != 0)
+    {
+      if (receiveMessage(msqid, &job, 777))
+      {
+        addToJobTable(&finishedJobTableHead, &finishedJobTableTail, job); 
+        busyNodes -= 1; // Each new message from node 0 represents a node that is free
+      }
+    }
+    killAllNodes();
   }  
   
   if (jobQueueHead != NULL)

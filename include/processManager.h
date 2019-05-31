@@ -34,6 +34,7 @@ typedef struct FloodTable
   int wasExecuted;    // is 0 when uniqueId was filled by a nodes response, 1 when uniqueId was filled by a job execution
   int uniqueId;       // uniqueId is the ID for each Job
   int nodesResponse[16];
+  int terminate;      // terminate is usually 0, if program needs to terminate, it is 1
 } floodTable;
 
 typedef struct NodeJob
@@ -53,3 +54,4 @@ int isResponse(nodeJob *, floodTable *);
 void eraseFloodTable(floodTable *);
 void getSchedulerMsg(int);
 void sendNodeMessage(int, struct NodeJob *, long);
+void cleanAllRemainingMessages(int);
