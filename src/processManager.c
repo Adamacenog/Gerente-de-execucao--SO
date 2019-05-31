@@ -419,7 +419,7 @@ void sendNodeMessage(int msqid, struct NodeJob *nodejob, long mtype)
 /* Floods the message from one node to all nodes, in a clever way, according to the topology selected by the user */
 void floodNodeMessage(int msqid, nodeJob *nodeJob, int processManagerId, int topology)
 {
-  int whoSent = nodeJob->job.nodeId, binaryAddr[4], i, adjacentNode[4], sendValue;
+  int whoSent = nodeJob->job.nodeId, binaryAddr[4], i, adjacentNode[4], sendValue, neighbours[4] = {0,0,0,0};
   struct msgbuf buf;
 
   /* Sets the nodeId of the node that is sending the message */
@@ -455,7 +455,86 @@ void floodNodeMessage(int msqid, nodeJob *nodeJob, int processManagerId, int top
     
     /* Torus */
     case 2:
-    /* code */
+      switch (processManagerId)
+      {
+        case 0:
+          assignVector(neighbours, 1, 3, 4, 12);
+          break;
+          
+        case 1:
+          assignVector(neighbours, 0, 2, 5, 13);
+          break;
+        
+        case 2:
+          assignVector(neighbours, 1, 3, 6, 14);
+          break;
+      
+        case 3:
+          assignVector(neighbours, 0, 2, 7, 15);
+          break;
+
+        case 4:
+          assignVector(neighbours, 5, 7, 8, 12);
+          break;
+
+        case 5:
+          assignVector(neighbours, 1, 4, 6, 9);
+          break;
+
+        case 6:
+          assignVector(neighbours, 2, 5, 7, 10);
+          break;
+
+        case 7:
+          assignVector(neighbours, 3, 4, 6, 11);
+          break;
+
+        case 8:
+          assignVector(neighbours, 4, 9, 11, 12);
+          break;
+
+        case 9:
+          assignVector(neighbours, 5, 8, 10, 13);
+          break;
+
+        case 10:
+          assignVector(neighbours, 6, 9, 11, 14);
+          break;
+
+        case 11:
+          assignVector(neighbours, 7, 8, 10, 15);
+          break;
+
+        case 12:
+          assignVector(neighbours, 0, 8, 13, 15);
+          break;
+
+        case 13:
+          assignVector(neighbours, 1, 9, 12, 14);
+          break;
+
+        case 14:
+          assignVector(neighbours, 2, 10, 13, 15);
+          break;
+
+        case 15:
+          assignVector(neighbours, 3, 11, 12, 14);
+          break;
+
+        default:
+          printf("Error: Unknown behaviour ¯\\_(ツ)_/¯!\n");
+          break;
+      }     
+
+      for (i = 0; i < 4; i++)
+      {
+        if (whoSent != neighbours[i])
+        {
+          /* Send the message with mtype neighbours[i] */
+          sendNodeMessage(msqid, nodeJob, (neighbours[i] + 1));
+        }
+      }
+          
       break;
     
     /* Fat_tree */
@@ -468,4 +547,12 @@ void floodNodeMessage(int msqid, nodeJob *nodeJob, int processManagerId, int top
       exit(1);
       break;
   }
+}
+
+void assignVector(int *vector, int a, int b, int c, int d)
+{
+  vector[0] = a;
+  vector[1] = b;
+  vector[2] = c;
+  vector[3] = d;
 }

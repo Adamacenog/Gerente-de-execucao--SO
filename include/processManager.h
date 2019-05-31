@@ -55,3 +55,4 @@ void eraseFloodTable(floodTable *);
 void getSchedulerMsg(int);
 void sendNodeMessage(int, struct NodeJob *, long);
 void cleanAllRemainingMessages(int);
+void assignVector(int *, int, int, int, int);
