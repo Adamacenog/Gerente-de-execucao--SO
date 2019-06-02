@@ -233,6 +233,8 @@ void terminateScheduler(int sig)
   
   if (jobQueueHead != NULL)
   {
+    int alarmRemaining = alarm(0);
+    decreaseAllRemainingTimes(jobQueueHead, ((*jobQueueHead).remainingSeconds) - alarmRemaining);
     printf("\nJobs that were still waiting to start the execution:\n");
     printfJobToExecute(jobQueueHead);
     deleteQueue(&jobQueueHead);

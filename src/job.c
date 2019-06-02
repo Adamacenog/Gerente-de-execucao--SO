@@ -171,7 +171,7 @@ void printfJobStatistics(jobTable *jobTableHead, jobTable *jobTableTail)
 {
     jobTable *aux;
     aux = jobTableHead;
-    int hasEnded = 1;
+    int hasEnded = 1, printMessage = 1;
 
     while (aux != NULL)
     {
@@ -182,17 +182,41 @@ void printfJobStatistics(jobTable *jobTableHead, jobTable *jobTableTail)
     }
 
     printf("---------------------------------------------------------------------------------------------------------------------------------\n");
-    printf("|Job: %d  |  Requesting process pid: %d  |  File: %s  |  Delay: %d  |  makespan:", jobTableHead->job.jobOrder, jobTableHead->job.delayedPid, jobTableHead->job.exeFile, jobTableHead->job.seconds);
+    printf("|Job: %d | Requesting process pid: %d | File: %s | Delay: %d seconds | makespan:", jobTableHead->job.jobOrder, jobTableHead->job.delayedPid, jobTableHead->job.exeFile, jobTableHead->job.seconds);
 
     if (hasEnded == 1)
     {
-        printf(" %ld  |  Fastest node: %d  |  Slowest node: %d\n",(jobTableTail->job.endTime - jobTableHead->job.startTime), jobTableHead->job.nodeId, jobTableTail->job.nodeId);
+        printf(" %ld seconds | Fastest node: %d | Slowest node: %d\n",(jobTableTail->job.endTime - jobTableHead->job.startTime), jobTableHead->job.nodeId, jobTableTail->job.nodeId);
         printf("|Minimum startTime: %s", ctime(&jobTableHead->job.startTime));
         printf("|Maximum endTime: %s", ctime(&jobTableTail->job.endTime));
     }
     else
-    {
-        printf(" - not every node ended the execution!\n");
+    {        
+        aux = jobTableHead;
+        while (aux != NULL)
+        {
+            if (aux->job.endTime != -1 && printMessage)
+            {
+                printf(" - not every node ended the execution!\n");
+                printf("\nNodes that ended the execution:\n");
+                printMessage = 0;
+            }
+
+            if (aux->job.endTime != -1)
+            {
+                printf("\n|Node: %d\n", aux->job.nodeId);
+                printf("|Job: %d | Requesting process pid: %d | File: %s | Delay: %d seconds | makespan: %ld seconds\n", aux->job.jobOrder, aux->job.delayedPid, aux->job.exeFile, aux->job.seconds, (aux->job.endTime - aux->job.startTime));
+                printf("|StartTime: %s", ctime(&aux->job.startTime));
+                printf("|EndTime: %s", ctime(&aux->job.endTime));
+            }
+
+            aux = aux->nextTable;
+        }
+
+        if (printMessage)
+        {
+            printf(" - no node has finished running!\n");
+        }
     }   
 
     printf("---------------------------------------------------------------------------------------------------------------------------------\n");
