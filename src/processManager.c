@@ -204,7 +204,7 @@ int main(int argc, char const *argv[])
         }
         else
         {
-          if (errno != 42 && errno != 0)
+          if (errno != ENOMSG && errno != 0)
           {
             printf("Execution Error.\n");
             perror("waitpid");
